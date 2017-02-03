@@ -36,7 +36,9 @@ export class loader{
         fun:/function (.+?)\((.*?)\)/g,
         loader:/\$this->load->(.+?)\((.+?)\);/g,
         method:/->[a-zA-Z0-9_]*$/,
-        endOfWords:/\)\s*[=|!|\|\||&&|<|>]/
+        endOfWords:/\)\s*[=|!|\|\||&&|<|>]/,
+        completeWord:/^[a-zA-Z0-9_]*(\()?/,
+        const:/[CONST|const] ([a-zA-Z0-9_]*)=(.*);/g
     };
     cache={
         system:new Map<string,cache>(),
@@ -429,15 +431,8 @@ export class loader{
         if (completeToken){
             cha=line.substr(0,position.character);
         }else{
-            let character=line.indexOf('(',position.character);
-            let t=line.indexOf('->',position.character);
-            character=character>=0?
-                (t>=0?Math.min(character,t):character):t;
-            if (character>=0
-            ||(character=line.indexOf(';',position.character))>=0){
-                if (line[character]=='(') character++;
-                cha=line.substr(0,character);
-            }else cha=line;
+            var addition=line.substr(position.character).match(this.re.completeWord)[0];
+            cha=line.substr(0,position.character)+addition;
         }
         cha=cha.trim();//.replace(/^[\)\}\]]*/,'');
         var lineNum=position.line;
