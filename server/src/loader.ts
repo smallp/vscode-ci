@@ -146,7 +146,8 @@ export class loader{
         let method=arr.pop();
         let toRet:SignatureHelp={
             signatures:[],
-            activeSignature:0
+            activeSignature:0,
+            activeParameter:0
         };
         var indexParam=method.indexOf('(');
         if (indexParam>=0){
@@ -239,8 +240,7 @@ export class loader{
     }
 
     //deal with $this->load
-    parseLoader(uri:string){
-        let content=fs.readFileSync(uri.substr(7),{encoding:'utf-8'});
+    parseLoader(content:string){
         let match=null;
         while ((match = this.re.loader.exec(content)) != null){
             if (match[1]=='model'||match[1]=='library'){
