@@ -1,8 +1,8 @@
 {
-  "name": "language-server-example",
-  "description": "Example implementation of a language server in node.",
-  "version": "0.0.1",
-  "author": "Microsoft Corporation",
+  "name": "small-ci",
+  "description": "Language server in node for small-ci.",
+  "version": "0.0.9",
+  "author": "small",
   "license": "MIT",
   "engines": {
     "node": "*"

@@ -4,7 +4,6 @@ import {
     ParameterInformation
 } from 'vscode-languageserver';
 import * as fs from 'fs';
-import * as path from 'path';
 interface fun{
     param:ParameterInformation[];
     location:Location;
@@ -27,18 +26,21 @@ interface cache{
     funs:Map<string,fun>;
     const:string[];
     variable:string[];
+    className:string;
     uri:string;
 }
 export class loader{
     //root of the workspace
     root:string='';
+    isLinux:boolean;
     re={
         fun:/function (.+?)\((.*?)\)/g,
         loader:/\$this->load->(.+?)\((.+?)\);/g,
         method:/->[a-zA-Z0-9_]*$/,
         endOfWords:/\)\s*[=|!|\|\||&&|<|>]/,
         completeWord:/^[a-zA-Z0-9_]*(\()?/,
-        const:/[CONST|const] ([a-zA-Z0-9_]*)=(.*);/g
+        const:/[CONST|const] ([a-zA-Z0-9_]*)=(.*);/g,
+        class: /class (.*?)[ {]/i
     };
     cache={
         system:new Map<string,cache>(),
@@ -55,9 +57,9 @@ export class loader{
         this.cache.system.set('db',null);
         this.cache.system.set('load',null);
     }
-    allFun(uri:string):SymbolInformation[]{
-        let path=uri.replace('file://','');
-        let content=fs.readFileSync(path,{encoding:'utf-8'});
+    allFun(document):SymbolInformation[]{
+        let uri=document.uri;
+        let content=document.getText();
         let res:SymbolInformation[]=[];
         let match=null;
         while ((match = this.re.fun.exec(content)) != null){
@@ -218,6 +220,7 @@ export class loader{
 
     initModels(root:string):void{
         this.root=root;
+        this.isLinux=root.startsWith('/');
         let path=root+'/application/models/';
         this._initModels(path,'');
     }
@@ -305,8 +308,8 @@ export class loader{
                     });
                     this.cache[kind].set('CI_DB_result',{
                         funs:db,
-                        const:[],variable:[],
-                        uri:'file://'+path+'/system/database/DB_result.php'
+                        const:[],variable:[],className:null,
+                        uri:'file://'+(this.isLinux?'':'/')+path+'/system/database/DB_result.php'
                     });
                     //load DB_query_builder + DB_driver, with mysql_driver
                     db=this._parseFile(path+'/system/database/DB_driver.php').funs;
@@ -320,8 +323,8 @@ export class loader{
                     });
                     this.cache[kind].set(name,{
                         funs:db,
-                        const:[],variable:[],
-                        uri:'file://'+path+'/system/database/DB_query_builder.php'
+                        const: [], variable: [], className: null,
+                        uri: 'file://' + (this.isLinux ?'':'/')+path+'/system/database/DB_query_builder.php'
                     });
                     //for method chaining
                     this.alias.set('CI_DB_query_builder','db');
@@ -346,7 +349,7 @@ export class loader{
         }
         let data=this._parseFile(path);
         this.cache[kind].set(name,data);
-        this.cached_info.set('file://'+path,{kind:kind,name:name});
+        this.cached_info.set(this._path2uri(path),{kind:kind,name:name});
         return Array.from(data.funs.keys());
     }
 
@@ -354,6 +357,7 @@ export class loader{
         let content=fs.readFileSync(path,{encoding:'utf-8'});
         let funs=new Map();
         let match=null;
+        //get funs info
         while ((match = this.re.fun.exec(content)) != null){
             //ignore private method
             if (match[1].startsWith('_')) continue;
@@ -361,7 +365,7 @@ export class loader{
                 ret:'',
                 document:'',
                 location:{
-                    uri:'file://'+path,
+                    uri: this._path2uri(path),
                     range:null
                 }
             };
@@ -406,7 +410,9 @@ export class loader{
             }
             funs.set(match[1],data);
         }
-        return {funs:funs,const:[],variable:[],uri:'file://'+path};
+        //get class name
+        match=this.re.class.exec(content);
+        return { funs: funs, const: [], variable: [], uri: this._path2uri(path), className: null};
     }
 
     getClassInfo(claName:string):class_info{
@@ -422,6 +428,10 @@ export class loader{
             }
         }
         return null;
+    }
+
+    _path2uri(path:string):string{
+        return this.isLinux ? `file://${path}` : `file:///${path}`;
     }
 
     _allWords(text:string,position,completeToken=true):string{

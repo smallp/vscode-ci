@@ -47,13 +47,13 @@ connection.onInitialize((params): InitializeResult => {
 
 documents.onDidOpen((e)=>{
 	if (e.document.languageId!='php') return ;
-	mLoader.parseLoader(e.document.uri);
+	mLoader.parseLoader(e.document.getText());
 });
 
 documents.onDidSave((e)=>{
 	if (e.document.languageId!='php') return ;
 	let uri=e.document.uri;
-	mLoader.parseLoader(uri);
+	mLoader.parseLoader(e.document.getText());
 	if (mLoader.cached_info.has(uri)){
 		let info=mLoader.cached_info.get(uri);
 		mLoader.parseFile(info.name,info.kind);
@@ -78,7 +78,7 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
 });
 
 connection.onDocumentSymbol((pram:DocumentSymbolParams):SymbolInformation[]=> {
-	return mLoader.allFun(pram.textDocument.uri);
+	return mLoader.allFun(documents.get(pram.textDocument.uri));
 });
 
 connection.onSignatureHelp((position:TextDocumentPositionParams):SignatureHelp=>{
