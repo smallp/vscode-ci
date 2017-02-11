@@ -29,7 +29,7 @@ Pressing F1 in VS Code, and type @. Then you can get all the methods in this fil
 You can goto definition for all the models, libraries and their methods.
 
 ## Known issues
-1.  The extension will only open the file when going to the definition of a class.
+*  <del>The extension will only open the file when going to the definition of a class.</del>
 
 ## Todo:
 1. Add the feature of hover.

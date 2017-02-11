@@ -14,9 +14,13 @@ interface fun{
 //     location:Location;
 //     document:string;
 // }
-interface class_info{
+interface class_cache{
     kind:string;
     data:cache;
+}
+interface class_data{
+    location:Location,
+    name:string
 }
 interface cache_info{
     name:string;
@@ -26,13 +30,11 @@ interface cache{
     funs:Map<string,fun>;
     const:string[];
     variable:string[];
-    className:string;
-    uri:string;
+    classData:class_data;
 }
 export class loader{
     //root of the workspace
     root:string='';
-    isLinux:boolean;
     re={
         fun:/function (.+?)\((.*?)\)/g,
         loader:/\$this->load->(.+?)\((.+?)\);/g,
@@ -190,14 +192,8 @@ export class loader{
             return null;
         else if (arr.length==2){
             let data=this.getClassInfo(arr[1]);
-            if (data){
-                return {
-                    uri:data.data.uri,
-                    range:{
-                        start:{line:0,character:0},
-                        end:{line:0,character:0}
-                    }
-                }
+            if (data&&data.data.classData){
+                return data.data.classData.location;
             }else return null;
         }else if (arr.length==3){
             let data=this.getClassInfo(arr[1]);
@@ -220,7 +216,6 @@ export class loader{
 
     initModels(root:string):void{
         this.root=root;
-        this.isLinux=root.startsWith('/');
         let path=root+'/application/models/';
         this._initModels(path,'');
     }
@@ -301,19 +296,22 @@ export class loader{
             case 'system':
                 if (name=='db'){
                     //load DB_result
-                    let db=this._parseFile(path+'/system/database/DB_result.php').funs;
+                    let retData=this._parseFile(path+'/system/database/DB_result.php');
                     let qb_db=this._parseFile(path+'/system/database/drivers/mysql/mysql_result.php').funs;
+                    let db=retData.funs;
+                    let classData=retData.classData;
                     qb_db.forEach((v,k)=>{
                         db.set(k,v);
                     });
                     this.cache[kind].set('CI_DB_result',{
                         funs:db,
-                        const:[],variable:[],className:null,
-                        uri:'file://'+(this.isLinux?'':'/')+path+'/system/database/DB_result.php'
+                        const: [], variable: [], classData: classData
                     });
                     //load DB_query_builder + DB_driver, with mysql_driver
                     db=this._parseFile(path+'/system/database/DB_driver.php').funs;
-                    qb_db=this._parseFile(path+'/system/database/DB_query_builder.php').funs;
+                    retData=this._parseFile(path+'/system/database/DB_query_builder.php');
+                    qb_db=retData.funs;
+                    classData=retData.classData;
                     qb_db.forEach((v,k)=>{
                         db.set(k,v);
                     });
@@ -323,8 +321,7 @@ export class loader{
                     });
                     this.cache[kind].set(name,{
                         funs:db,
-                        const: [], variable: [], className: null,
-                        uri: 'file://' + (this.isLinux ?'':'/')+path+'/system/database/DB_query_builder.php'
+                        const: [], variable: [], classData: classData
                     });
                     //for method chaining
                     this.alias.set('CI_DB_query_builder','db');
@@ -411,11 +408,32 @@ export class loader{
             funs.set(match[1],data);
         }
         //get class name
-        match=this.re.class.exec(content);
-        return { funs: funs, const: [], variable: [], uri: this._path2uri(path), className: null};
+        let classData: class_data = null;
+        match = this.re.class.exec(content);
+        if (match){
+            let str=content.substr(0,match.index);
+            let arr=str.split('\n');
+            let line=arr.length-1;
+            let character=arr.pop().length;
+            classData={
+                name:match[0],
+                location:{
+                    uri:this._path2uri(path),
+                    range:{
+                        start:{
+                            line:line,character:character
+                        },
+                        end{
+                            line: line, character: character+match[0].length
+                        }
+                    }
+                }
+            }
+        }
+        return { funs: funs, const: [], variable: [], classData: classData};
     }
 
-    getClassInfo(claName:string):class_info{
+    getClassInfo(claName:string):class_cache{
         for (var kind in this.cache){
             if (this.cache[kind].has(claName)){
                 var claData=this.cache[kind].get(claName);
@@ -431,7 +449,8 @@ export class loader{
     }
 
     _path2uri(path:string):string{
-        return this.isLinux ? `file://${path}` : `file:///${path}`;
+        if (path[0] !== '/') path = '/'+path.replace(':','%3A').replace(/\\/g, '/');
+        return encodeURI(`file://${path}`);
     }
 
     _allWords(text:string,position,completeToken=true):string{
