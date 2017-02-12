@@ -22,14 +22,18 @@ interface class_data{
     location:Location,
     name:string
 }
+interface const_data{
+    location: Location,
+    value:string,
+    document:string
+}
 interface cache_info{
     name:string;
     kind:string;
 }
 interface cache{
     funs:Map<string,fun>;
-    const:string[];
-    variable:string[];
+    const:Map<string,const_data>;//include const and static
     classData:class_data;
 }
 export class loader{
@@ -41,7 +45,9 @@ export class loader{
         method:/->[a-zA-Z0-9_]*$/,
         endOfWords:/\)\s*[=|!|\|\||&&|<|>]/,
         completeWord:/^[a-zA-Z0-9_]*(\()?/,
-        const:/[CONST|const] ([a-zA-Z0-9_]*)=(.*);/g,
+        const: /const ([a-zA-Z0-9_]*)=(.*);/ig,
+        static: /static \$([a-zA-Z0-9_]*)=(.*);/ig,
+        isStatic:/([a-zA-Z0-9_]*)::([a-zA-Z0-9_\$]*)$/,
         class: /class (.*?)[ {]/i
     };
     cache={
@@ -305,7 +311,7 @@ export class loader{
                     });
                     this.cache[kind].set('CI_DB_result',{
                         funs:db,
-                        const: [], variable: [], classData: classData
+                        const: new Map(), classData: classData
                     });
                     //load DB_query_builder + DB_driver, with mysql_driver
                     db=this._parseFile(path+'/system/database/DB_driver.php').funs;
@@ -321,7 +327,7 @@ export class loader{
                     });
                     this.cache[kind].set(name,{
                         funs:db,
-                        const: [], variable: [], classData: classData
+                        const: new Map(), classData: classData
                     });
                     //for method chaining
                     this.alias.set('CI_DB_query_builder','db');
@@ -354,6 +360,7 @@ export class loader{
         let content=fs.readFileSync(path,{encoding:'utf-8'});
         let funs=new Map();
         let match=null;
+        let uri = this._path2uri(path);
         //get funs info
         while ((match = this.re.fun.exec(content)) != null){
             //ignore private method
@@ -362,7 +369,7 @@ export class loader{
                 ret:'',
                 document:'',
                 location:{
-                    uri: this._path2uri(path),
+                    uri: uri,
                     range:null
                 }
             };
@@ -418,22 +425,62 @@ export class loader{
             classData={
                 name:match[0],
                 location:{
-                    uri:this._path2uri(path),
+                    uri:uri,
                     range:{
                         start:{
                             line:line,character:character
                         },
-                        end{
+                        end:{
                             line: line, character: character+match[0].length
                         }
                     }
                 }
             }
         }
-        return { funs: funs, const: [], variable: [], classData: classData};
+        let con=new Map<string,const_data>();
+        match=null;
+        var arr = content.split('\n');
+        while ((match = this.re.const.exec(content)) != null){
+            var lines = content.substr(0, match.index).split('\n');
+            var line=lines.length-1;
+            var suffLength=lines.pop().length;
+            var str=arr[line].trim();
+            let item:const_data={
+                location:{
+                    uri:uri,
+                    range:{
+                        start:{line:line,character:suffLength},
+                        end:{line:line,character:suffLength+str.length}
+                    }
+                },
+                value:match[2],
+                document: str == match[0]?null:str.substr(match[0].length)
+            }
+            con.set(match[1],item);
+        }
+        while ((match = this.re.static.exec(content)) != null) {
+            var lines = content.substr(0, match.index).split('\n');
+            var line = lines.length - 1;
+            var suffLength = lines.pop().length;
+            var str = arr[line].trim();
+            let item: const_data = {
+                location: {
+                    uri: uri,
+                    range: {
+                        start: { line: line, character: suffLength },
+                        end: { line: line, character: suffLength + str.length }
+                    }
+                },
+                value: match[2],
+                document: str == match[0] ? null : str.substr(match[0].length)
+            }
+            con.set('$'+match[1], item);
+        }
+        return { funs: funs, const:con, classData: classData};
     }
 
     getClassInfo(claName:string):class_cache{
+        if (this.alias.has(claName)) claName = this.alias.get(claName);
         for (var kind in this.cache){
             if (this.cache[kind].has(claName)){
                 var claData=this.cache[kind].get(claName);
@@ -449,8 +496,9 @@ export class loader{
     }
 
     _path2uri(path:string):string{
-        if (path[0] !== '/') path = '/'+path.replace(':','%3A').replace(/\\/g, '/');
-        return encodeURI(`file://${path}`);
+        if (path[0] !== '/') path = '/' + encodeURI(path.replace(/\\/g, '/')).replace(':', '%3A');
+        else path=encodeURI(path);
+        return `file://${path}`;
     }
 
     _allWords(text:string,position,completeToken=true):string{

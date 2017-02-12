@@ -39,7 +39,7 @@ connection.onInitialize((params): InitializeResult => {
 			},
 			completionProvider: {
 				resolveProvider: true,
-				triggerCharacters:['>']
+				triggerCharacters:['>',':']
 			}
 		}
 	}
