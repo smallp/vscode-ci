@@ -17,6 +17,7 @@ It can provide code completion for all models and some system classes (include d
 1. When you hint `$this->`, it will display `db`,`input` and the name of other classes.
 2. When you select the class, it will insert the class with '-'. So while you type '>' it will display all the methods of the class.
 3. It supports method chaining only for **db** class.
+4. When you hint `className::`, it will display const and static variables.
 
 As for the library, the extension will not parse the file unless you open a file loaded the library. It means when you open a file that include the code `$this->load->library('foo')`, the extension will search for the file and parse it.
 
@@ -26,14 +27,13 @@ Pressing F1 in VS Code, and type @. Then you can get all the methods in this fil
 
 ### Goto definition
 
-You can goto definition for all the models, libraries and their methods.
+You can goto definition for all the models, libraries, their methods and const variables.
 
 ## Known issues
-*  <del>The extension will only open the file when going to the definition of a class.</del>
+*  No `$this->method()` support. It would be basic language support, so I don't want to do it again.
 
 ## Todo:
 1. Add the feature of hover.
-2. Add the `const` support for code completion.
-3. Add setting for autoloading libraries.
+2. Add setting for autoloading libraries.
 
 **Enjoy!**

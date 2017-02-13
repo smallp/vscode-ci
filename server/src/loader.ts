@@ -87,8 +87,16 @@ export class loader{
     }
 
     complete(textDocumentPosition: TextDocumentPositionParams,text:string): CompletionItem[]{
-        let words=this._allWords(text,textDocumentPosition.position);
-        let res=[];
+        let words = this._allWords(text, textDocumentPosition.position);
+        let res = [];
+        let isStatic=this.re.isStatic.exec(words);
+        if (isStatic){
+            let constData=this.getClassByName(isStatic[1]);
+            for (var [key,val] of constData){
+                res.push({ label: key, kind: CompletionItemKind.Field, detail: val.value, documentation: val.document });
+            }
+            return res;
+        }
         let chain=words.split('->');
         if (chain.length==1) return res;
         let token:string=chain[chain.length-2];
@@ -193,6 +201,14 @@ export class loader{
 
     definition(textDocumentPosition: TextDocumentPositionParams,text:string):Location{
         let words=this._allWords(text,textDocumentPosition.position,false);
+        let isStatic = this.re.isStatic.exec(words);
+        if (isStatic) {
+            let constData = this.getClassByName(isStatic[1]);
+            if (constData.has(isStatic[2])){
+                var data=constData.get(isStatic[2]);
+                return data.location;
+            }
+        }
         let arr=words.split('->');
         if (arr.length==1||arr[0]!='$this')
             return null;
@@ -254,7 +270,8 @@ export class loader{
                 if (match[1]=='model'){
                     if (a.length>1){
                         //has alias
-                        var alias=a[1].trim().slice(1,-1).toLowerCase();
+                        var alias = a[1].trim().slice(1, -1).toLowerCase();
+                        name = name.toLowerCase();
                         this.alias.set(alias,name);
                         this.cache[match[1]].set(alias,null);
                     }else{
@@ -275,7 +292,9 @@ export class loader{
                         name=this._setAlise(name);
                     }
                 }
-                this.cache[match[1]].set(name,null);
+                if (!this.cache[match[1]].get(name)){
+                    this.parseFile(name, match[1]);
+                }
             }
         }
     }
@@ -423,7 +442,7 @@ export class loader{
             let line=arr.length-1;
             let character=arr.pop().length;
             classData={
-                name:match[0],
+                name:match[1],
                 location:{
                     uri:uri,
                     range:{
@@ -437,6 +456,7 @@ export class loader{
                 }
             }
         }
+        //get const and static
         let con=new Map<string,const_data>();
         match=null;
         var arr = content.split('\n');
@@ -454,7 +474,7 @@ export class loader{
                     }
                 },
                 value:match[2],
-                document: str == match[0]?null:str.substr(match[0].length)
+                document: str == match[0]?null:str.substr(match[0].length+2)
             }
             con.set(match[1],item);
         }
@@ -472,7 +492,7 @@ export class loader{
                     }
                 },
                 value: match[2],
-                document: str == match[0] ? null : str.substr(match[0].length)
+                document: str == match[0] ? null : str.substr(match[0].length + 2)
             }
             con.set('$'+match[1], item);
         }
@@ -495,6 +515,16 @@ export class loader{
         return null;
     }
 
+    getClassByName(className: string): Map<string, const_data>{
+        for (var kind in this.cache){
+            for (var [key,cla] of this.cache[kind]){
+                if (cla && cla.classData && cla.classData.name==className)
+                    return cla.const;
+            }
+        }
+        return new Map();
+    }
+
     _path2uri(path:string):string{
         if (path[0] !== '/') path = '/' + encodeURI(path.replace(/\\/g, '/')).replace(':', '%3A');
         else path=encodeURI(path);
@@ -511,6 +541,8 @@ export class loader{
             var addition=line.substr(position.character).match(this.re.completeWord)[0];
             cha=line.substr(0,position.character)+addition;
         }
+        let strConst=this.re.isStatic.exec(cha);
+        if (strConst!=null) return strConst[0];
         cha=cha.trim();//.replace(/^[\)\}\]]*/,'');
         var lineNum=position.line;
         while (!cha.match(/^[a-zA-Z\$]/)&&lineNum>0) {
