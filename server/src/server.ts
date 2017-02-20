@@ -9,7 +9,7 @@ import {
 	createConnection, IConnection, TextDocumentSyncKind,
 	TextDocuments, TextDocument, Diagnostic, DiagnosticSeverity,
 	InitializeParams, InitializeResult, TextDocumentPositionParams,
-	CompletionItem, CompletionItemKind,
+	CompletionItem, CompletionItemKind, InsertTextFormat,
 	DocumentSymbolParams,SymbolInformation,SignatureHelp,Location
 } from 'vscode-languageserver';
 import * as loader from './loader';
@@ -90,10 +90,17 @@ connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): Comp
 // This handler resolve additional information for the item selected in
 // the completion list.
 connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
-	if (item.kind==CompletionItemKind.Class)
+	if (item.kind==CompletionItemKind.Class){
 		item.insertText=item.label+'-';
-	else if (item.kind==CompletionItemKind.Method)
-		item.insertText=item.label+'()';
+		// item.command={
+		// 	command:'vscode.executecompletionitemprovider',
+		// 	title:'',
+		// 	arguments: [{ uri: item.data.textDocument.uri},{}]
+		// }
+	}else if (item.kind==CompletionItemKind.Method){
+		item.insertText = item.label + '($1)$0';
+		item.insertTextFormat = InsertTextFormat.Snippet;
+	}
 	return item;
 });
 

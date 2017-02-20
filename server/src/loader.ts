@@ -116,19 +116,21 @@ export class loader{
             let t:string;
             l=this.cache.system.keys();
             for(t of l){
-                res.push({label:t,kind:CompletionItemKind.Class,detail:'system class'});
+                res.push({label:t,kind:CompletionItemKind.Class,detail:'system class',data:textDocumentPosition});
             }
             l=this.cache.model.keys();
             for(t of l){
                 if (t.indexOf('/')<0)
-                    res.push({label:t,kind:CompletionItemKind.Class,detail:'model '+
-                    (this.alias.has(t)?this.alias.get(t):t)});
+                    res.push({
+                        label: t, kind: CompletionItemKind.Class, data: textDocumentPosition,
+                        detail:'model '+(this.alias.has(t)?this.alias.get(t):t)});
             }
             l=this.cache.library.keys();
             for(t of l){
                 if (t.indexOf('/')<0)
-                    res.push({label:t,kind:CompletionItemKind.Class,detail:'library '+
-                    (this.alias.has(t)?this.alias.get(t):t)});
+                    res.push({
+                        label: t, kind: CompletionItemKind.Class, data: textDocumentPosition,
+                        detail:'library '+(this.alias.has(t)?this.alias.get(t):t)});
             }
         }else{
             token=this.alias.has(token)?this.alias.get(token):token;
@@ -142,8 +144,8 @@ export class loader{
                         } catch (error) {
                             return res;
                         }
-                        break;
-                    }else funs=funs.funs.keys();
+                    } else funs = funs.funs.keys();
+                    break;
                 }
             }
             if (typeof funs=='undefined') return res;
