@@ -25,17 +25,16 @@ export function activate(context: ExtensionContext) {
 	
 	// Options to control the language client
 	let clientOptions: LanguageClientOptions = {
-		// Register the server for plain text documents
 		documentSelector: ['php'],
 		synchronize: {
-			// configurationSection: 'CI',
+			configurationSection: 'CI',
 			// Notify the server about file changes to '.clientrc files contain in the workspace
 			fileEvents: workspace.createFileSystemWatcher('**/.clientrc')
 		}
 	}
 	
 	// Create the language client and start the client.
-	let disposable = new LanguageClient('small', 'small-ci', serverOptions, clientOptions).start();
+	let disposable = new LanguageClient('small-ci', serverOptions, clientOptions).start();
 	// Push the disposable to the context's subscriptions so that the 
 	// client can be deactivated on extension deactivation
 	context.subscriptions.push(disposable);

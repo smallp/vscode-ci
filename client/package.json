@@ -4,14 +4,16 @@
 	"description": "Code completion for PHP codeigniter framework",
 	"author": "Small",
 	"license": "MIT",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"publisher":"small",
   "engines": {
     "vscode": "^1.8.0"
   },
   "categories": [
-    "Other"
+    "Languages"
   ],
+  "keywords":["PHP","CI","codeigniter"],
+  "icon":"image/CI.png",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/smallp/vscode-ci.git"
@@ -24,6 +26,24 @@
   ],
   "main": "./out/src/extension",
   "contributes": {
+    "configuration": {
+      "type": "object",
+      "title": "CI autoload",
+      "properties": {
+        "CI.model": {
+          "type": "array",
+          "default": [],
+          "description": "Auto load models. Eg: user/account"
+        },
+        "CI.other": {
+          "type": "array",
+          "default": [
+            "system/core/Common.php"
+          ],
+          "description": "Path of files that need parse. That is just for addition const support."
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "tsc -p ./",

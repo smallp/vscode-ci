@@ -34,14 +34,34 @@ connection.onInitialize((params): InitializeResult => {
 			textDocumentSync:TextDocumentSyncKind.Full,
 			documentSymbolProvider:true,
 			definitionProvider :true,
-			"signatureHelpProvider" : {
-				"triggerCharacters": [ '(' ]
+			signatureHelpProvider : {
+				triggerCharacters: [ '(' ]
 			},
 			completionProvider: {
 				resolveProvider: true,
 				triggerCharacters:['>',':']
 			}
 		}
+	}
+});
+
+interface Settings {
+	CI: CI;
+}
+
+interface CI {
+	model: Array<string>;
+	other: Array<string>;
+}
+
+connection.onDidChangeConfiguration((change) => {
+	let settings = <Settings>change.settings;
+	var str:string;
+	for (str of settings.CI.model){
+		mLoader.parseFile(str,'model');
+	}
+	for (str of settings.CI.other) {
+		mLoader.loadOther(str);
 	}
 });
 

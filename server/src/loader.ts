@@ -33,7 +33,6 @@ interface cache_info{
 }
 interface cache{
     funs:Map<string,fun>;
-    const:Map<string,const_data>;//include const and static
     classData:class_data;
 }
 export class loader{
@@ -48,7 +47,7 @@ export class loader{
         const: /const ([a-zA-Z0-9_]*)=(.*);/ig,
         static: /static \$([a-zA-Z0-9_]*)=(.*);/ig,
         isStatic:/([a-zA-Z0-9_]*)::([a-zA-Z0-9_\$]*)$/,
-        class: /class (.*?)[ {]/i
+        class: /class (.*?)[ {]/ig
     };
     cache={
         system:new Map<string,cache>(),
@@ -56,6 +55,8 @@ export class loader{
         // helper:new Map<string,Map<string,fun>>(),
         library:new Map<string,cache>()
     };
+    //include const and static
+    const = new Map<string, Map<string, const_data>>();
     //use for class alias
     alias=new Map<string,string>();
     //use for refresh cache when file changed
@@ -91,7 +92,7 @@ export class loader{
         let res = [];
         let isStatic=this.re.isStatic.exec(words);
         if (isStatic){
-            let constData=this.getClassByName(isStatic[1]);
+            let constData=this.getConstByClaname(isStatic[1]);
             for (var [key,val] of constData){
                 res.push({ label: key, kind: CompletionItemKind.Field, detail: val.value, documentation: val.document });
             }
@@ -203,7 +204,7 @@ export class loader{
         let words=this._allWords(text,textDocumentPosition.position,false);
         let isStatic = this.re.isStatic.exec(words);
         if (isStatic) {
-            let constData = this.getClassByName(isStatic[1]);
+            let constData = this.getConstByClaname(isStatic[1]);
             if (constData.has(isStatic[2])){
                 var data=constData.get(isStatic[2]);
                 return data.location;
@@ -309,6 +310,12 @@ export class loader{
         return _name;
     }
 
+    //load file in setting-other
+    loadOther(str:string){
+        let path=this.root+'/'+str;
+        this._parseFile(path);
+    }
+
     //parse file to collect info
     parseFile(name:string,kind:string):string[] {
         let path=this.root;
@@ -330,7 +337,7 @@ export class loader{
                     });
                     this.cache[kind].set('CI_DB_result',{
                         funs:db,
-                        const: new Map(), classData: classData
+                        classData: classData
                     });
                     //load DB_query_builder + DB_driver, with mysql_driver
                     db=this._parseFile(path+'/system/database/DB_driver.php').funs;
@@ -346,7 +353,7 @@ export class loader{
                     });
                     this.cache[kind].set(name,{
                         funs:db,
-                        const: new Map(), classData: classData
+                        classData: classData
                     });
                     //for method chaining
                     this.alias.set('CI_DB_query_builder','db');
@@ -435,48 +442,60 @@ export class loader{
         }
         //get class name
         let classData: class_data = null;
-        match = this.re.class.exec(content);
-        if (match){
-            let str=content.substr(0,match.index);
-            let arr=str.split('\n');
-            let line=arr.length-1;
-            let character=arr.pop().length;
-            classData={
-                name:match[1],
-                location:{
-                    uri:uri,
-                    range:{
-                        start:{
-                            line:line,character:character
+        this.re.class.lastIndex=0;
+        while (match = this.re.class.exec(content)) {
+            let str = content.substr(0, match.index);
+            let arr = str.split('\n');
+            var suff = arr.pop();
+            if (suff.length>0&&!suff.endsWith(' ')) continue;//such as $class
+            else suff=suff.trim();
+            if (suff.startsWith('*') || suff.startsWith('/'))
+                continue;
+            let line = arr.length;//has poped
+            let character = arr.pop().length;
+            classData = {
+                name: match[1],
+                location: {
+                    uri: uri,
+                    range: {
+                        start: {
+                            line: line, character: character
                         },
-                        end:{
-                            line: line, character: character+match[0].length
+                        end: {
+                            line: line, character: character + match[0].length
                         }
                     }
                 }
             }
+            this._parseConst(content.substr(match.index),classData);
+            break;
         }
-        //get const and static
-        let con=new Map<string,const_data>();
-        match=null;
+        return { funs: funs, classData: classData};
+    }
+
+    //get const and static
+    _parseConst(content:string,classData:class_data){
+        let con = new Map<string, const_data>();
+        let match = null;
         var arr = content.split('\n');
-        while ((match = this.re.const.exec(content)) != null){
+        let suffLine=classData.location.range.start.line;
+        while ((match = this.re.const.exec(content)) != null) {
             var lines = content.substr(0, match.index).split('\n');
-            var line=lines.length-1;
-            var suffLength=lines.pop().length;
-            var str=arr[line].trim();
-            let item:const_data={
-                location:{
-                    uri:uri,
-                    range:{
-                        start:{line:line,character:suffLength},
-                        end:{line:line,character:suffLength+str.length}
+            var line = lines.length - 1;
+            var suffLength = lines.pop().length;
+            var str = arr[line].trim();
+            let item: const_data = {
+                location: {
+                    uri: classData.location.uri,
+                    range: {
+                        start: { line: suffLine+line, character: suffLength },
+                        end: { line: suffLine +line, character: suffLength + str.length }
                     }
                 },
-                value:match[2],
-                document: str == match[0]?null:str.substr(match[0].length+2)
+                value: match[2],
+                document: str == match[0] ? null : str.substr(match[0].length + 2)
             }
-            con.set(match[1],item);
+            con.set(match[1], item);
         }
         while ((match = this.re.static.exec(content)) != null) {
             var lines = content.substr(0, match.index).split('\n');
@@ -485,18 +504,18 @@ export class loader{
             var str = arr[line].trim();
             let item: const_data = {
                 location: {
-                    uri: uri,
+                    uri: classData.location.uri,
                     range: {
-                        start: { line: line, character: suffLength },
-                        end: { line: line, character: suffLength + str.length }
+                        start: { line: suffLine + line, character: suffLength },
+                        end: { line: suffLine + line, character: suffLength + str.length }
                     }
                 },
                 value: match[2],
                 document: str == match[0] ? null : str.substr(match[0].length + 2)
             }
-            con.set('$'+match[1], item);
+            con.set('$' + match[1], item);
         }
-        return { funs: funs, const:con, classData: classData};
+        this.const.set(classData.name, con);
     }
 
     getClassInfo(claName:string):class_cache{
@@ -515,14 +534,8 @@ export class loader{
         return null;
     }
 
-    getClassByName(className: string): Map<string, const_data>{
-        for (var kind in this.cache){
-            for (var [key,cla] of this.cache[kind]){
-                if (cla && cla.classData && cla.classData.name==className)
-                    return cla.const;
-            }
-        }
-        return new Map();
+    getConstByClaname(className: string): Map<string, const_data>{
+        return this.const.has(className) ? this.const.get(className) : new Map();
     }
 
     _path2uri(path:string):string{
