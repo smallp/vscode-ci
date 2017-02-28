@@ -152,7 +152,7 @@ export class loader{
             else{
                 let t:string;
                 for(t of funs){
-                    res.push({label:t,kind:CompletionItemKind.Method,detail:`${kind} ${token} ${t}`});
+                    res.push({label:t,kind:CompletionItemKind.Method,detail:`${kind} ${token}`});
                 }
             }
         }
@@ -250,11 +250,12 @@ export class loader{
         let path=root+dir;
         fs.readdir(path,function(err,files){
             if (err) return ;
-            let file:string;
-            for(file of files){
+            for(let file of files){
                 if (file.endsWith('.php')){
-                    file=file.slice(0,-4);
-                    that.cache.model.set((dir+file).toLowerCase(),null);
+                    file = (dir + file.slice(0, -4)).toLowerCase();
+                    that.cache.model.set(file, null);
+                    file = that._setAlise(file);
+                    that.cache.model.set(file, null);
                 }else if (!file.endsWith('html')){
                     that._initModels(root,dir+file+'/');
                 }
@@ -321,6 +322,7 @@ export class loader{
     //parse file to collect info
     parseFile(name:string,kind:string):string[] {
         let path=this.root;
+        if (this.alias.has(name)) name = this.alias.get(name);
         let dir=name.split('/');
         let fileName=dir.pop();
         fileName=fileName[0].toUpperCase()+fileName.substring(1);
