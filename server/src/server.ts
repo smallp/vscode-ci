@@ -12,7 +12,7 @@ import {
 	CompletionItem, CompletionItemKind, InsertTextFormat,
 	DocumentSymbolParams,SymbolInformation,SignatureHelp,Location
 } from 'vscode-languageserver';
-import * as loader from './loader';
+import * as loader from './control';
 let mLoader=new loader.loader();
 // Create a connection for the server. The connection uses Node's IPC as a transport
 let connection: IConnection = createConnection(new IPCMessageReader(process), new IPCMessageWriter(process));
@@ -73,10 +73,13 @@ documents.onDidOpen((e)=>{
 documents.onDidSave((e)=>{
 	if (e.document.languageId!='php') return ;
 	let uri=e.document.uri;
-	mLoader.parseLoader(e.document.getText());
+	let content=e.document.getText();
+	mLoader.parseLoader(content);
 	if (mLoader.cached_info.has(uri)){
 		let info=mLoader.cached_info.get(uri);
-		mLoader.parseFile(info.name,info.kind);
+		if (info.kind==null){
+			mLoader.parseConst(content,uri);
+		}else mLoader.parseFile(info.name,info.kind);
 	}
 });
 

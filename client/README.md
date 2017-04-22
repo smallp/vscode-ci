@@ -30,10 +30,8 @@ Pressing F1 in VS Code, and type @. Then you can get all the methods in this fil
 You can goto definition for all the models, libraries, their methods and const variables.
 
 ## Known issues
-* No `$this->method()` support. It would be basic language support, so I don't want to do it again.
 * If there are classes in one file, it can not work well. However, that is a rare situation. So there is no plan to fix it.
 * There is no `library` in setting because as you open a file including `$this->load->library`, the file would be parsed. Add a issue if you believe that is nesessary.
-* Cannot go to definition by the class name. As the class name shows with const or statis variables, you can go to the file by the variables.
 
 ## Todo:
 1. Add the feature of hover.

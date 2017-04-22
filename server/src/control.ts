@@ -1,53 +1,57 @@
 import {
     SymbolInformation,SymbolKind,Location,CompletionItemKind,
     TextDocumentPositionParams,CompletionItem,SignatureHelp,
-    ParameterInformation
+    ParameterInformation,Range
 } from 'vscode-languageserver';
 import * as fs from 'fs';
-interface fun{
+import * as parse from './parse';
+export interface fun{
     param:ParameterInformation[];
     location:Location;
     ret:string;
     document:string;
 }
+export interface api_fun{
+    name:string;
+    Range:Range;
+}
 // interface variable{
 //     location:Location;
 //     document:string;
 // }
-interface class_cache{
+export interface class_cache{
     kind:string;
     data:cache;
 }
-interface class_data{
+export interface class_data{
     location:Location,
     name:string
 }
-interface const_data{
+export interface const_data{
     location: Location,
     value:string,
     document:string
 }
-interface cache_info{
-    name:string;
+export interface cache_info{
+    name?:string;
     kind:string;
+    claName?:string;
 }
-interface cache{
+export interface cache{
     funs:Map<string,fun>;
     classData:class_data;
 }
+export interface api_parse{
+    funs:Map<string,fun>;
+    classData:class_data;
+    consts:Map<string, Map<string, const_data>>;
+}
 export class loader{
     //root of the workspace
-    root:string='';
-    re={
-        fun:/function (.+?)\((.*?)\)/g,
+    static root:string='';
+    static re={
         loader:/\$this->load->(.+?)\((.+?)\);/g,
-        method:/->[a-zA-Z0-9_]*$/,
-        endOfWords:/\)\s*[=|!|\|\||&&|<|>]/,
-        completeWord:/^[a-zA-Z0-9_]*(\()?/,
-        const: /const ([a-zA-Z0-9_]*)=(.*);/ig,
-        static: /static \$([a-zA-Z0-9_]*)=(.*);/ig,
-        isStatic:/([a-zA-Z0-9_]*)::([a-zA-Z0-9_\$]*)$/,
-        class: /class (.*?)[ {]/ig
+        isStatic:/([a-zA-Z0-9_]*)::([a-zA-Z0-9_\$]*)$/
     };
     cache={
         system:new Map<string,cache>(),
@@ -70,29 +74,34 @@ export class loader{
         let uri=document.uri;
         let content=document.getText();
         let res:SymbolInformation[]=[];
-        let match=null;
-        while ((match = this.re.fun.exec(content)) != null){
-            var lines=content.substr(0,match.index).split('\n');
-            var line=lines.length-1;
-            var startC=lines.pop().length-1;
-            res.push({name:match[1],kind:SymbolKind.Method,
+        var data=parse.parse.functions(content);
+        for (var i of data){
+            res.push({
+                name:i.name,kind:SymbolKind.Method,
                 location:{uri:uri,
-                    range:{
-                        start:{line:line,character:startC},
-                        end:{line:line,character:startC+match[0].length-1},
-                    }
+                    range:i.Range
                 }
-            });
+            })
         }
         return res;
     }
 
     complete(textDocumentPosition: TextDocumentPositionParams,text:string): CompletionItem[]{
-        let words = this._allWords(text, textDocumentPosition.position);
+        let words = parse.parse.getWords(text, textDocumentPosition.position);
         let res = [];
-        let isStatic=this.re.isStatic.exec(words);
+        let isStatic=loader.re.isStatic.exec(words);
         if (isStatic){
-            let constData=this.getConstByClaname(isStatic[1]);
+            var claName=isStatic[1];
+            if (claName.toLowerCase()=='self'){
+                var claInfo=this.cached_info.get(textDocumentPosition.textDocument.uri);
+                if (!claInfo){
+                    this.parseConst(text,textDocumentPosition.textDocument.uri);
+                    claInfo=this.cached_info.get(textDocumentPosition.textDocument.uri);
+                    if (!claInfo) return res;
+                }
+                claName=claInfo.claName;
+            }
+            let constData=this.getConstByClaname(claName);
             for (var [key,val] of constData){
                 res.push({ label: key, kind: CompletionItemKind.Field, detail: val.value, documentation: val.document });
             }
@@ -132,6 +141,14 @@ export class loader{
                         label: t, kind: CompletionItemKind.Class, data: textDocumentPosition,
                         detail:'library '+(this.alias.has(t)?this.alias.get(t):t)});
             }
+            l=parse.parse.functions(text);
+            var item:api_fun;
+            for(item of l){
+                if (!item.name.startsWith('__'))
+                res.push({
+                    label: item.name, kind: CompletionItemKind.Method, data: textDocumentPosition,
+                    detail:'method '+item.name});
+            }
         }else{
             token=this.alias.has(token)?this.alias.get(token):token;
             var funs,kind;
@@ -160,7 +177,7 @@ export class loader{
     }
 
     signature(textDocumentPosition: TextDocumentPositionParams,text:string): SignatureHelp{
-        let words=this._allWords(text,textDocumentPosition.position);
+        let words=parse.parse.getWords(text,textDocumentPosition.position);
         let arr=words.split('->');
         let claName=arr[1];
         claName=this.alias.has(claName)?this.alias.get(claName):claName;
@@ -203,8 +220,8 @@ export class loader{
     }
 
     definition(textDocumentPosition: TextDocumentPositionParams,text:string):Location{
-        let words=this._allWords(text,textDocumentPosition.position,false);
-        let isStatic = this.re.isStatic.exec(words);
+        let words=parse.parse.getWords(text,textDocumentPosition.position,false);
+        let isStatic = loader.re.isStatic.exec(words);
         if (isStatic) {
             let constData = this.getConstByClaname(isStatic[1]);
             if (constData.has(isStatic[2])){
@@ -240,7 +257,7 @@ export class loader{
     }
 
     initModels(root:string):void{
-        this.root=root;
+        loader.root=root;
         let path=root+'/application/models/';
         this._initModels(path,'');
     }
@@ -266,7 +283,7 @@ export class loader{
     //deal with $this->load
     parseLoader(content:string){
         let match=null;
-        while ((match = this.re.loader.exec(content)) != null){
+        while ((match = loader.re.loader.exec(content)) != null){
             if (match[1]=='model'||match[1]=='library'){
                 var a:Array<string>=match[2].split(',');
                 let name:string=a[0].trim().slice(1,-1);
@@ -315,13 +332,28 @@ export class loader{
 
     //load file in setting-other
     loadOther(str:string){
-        let path=this.root+'/'+str;
-        this._parseFile(path);
+        let path=loader.root+'/'+str;
+        let content=fs.readFileSync(path,{encoding:'utf-8'});
+        this.parseConst(content,parse.parse.path2uri(path));
+    }
+
+    parseConst(content:string,path:string){
+        var data=parse.parse.parseConst(content,path);
+        data.forEach((v,k)=>{
+            this.const.set(k,v);
+        });
+        if (data.size>0){
+            if (this.cached_info.has(path)){
+                var ori=this.cached_info.get(path);
+                ori.claName=data.keys().next().value;
+                this.cached_info.set(path,ori);
+            }else this.cached_info.set(path,{kind:null,claName:data.keys().next().value});
+        }
     }
 
     //parse file to collect info
     parseFile(name:string,kind:string):string[] {
-        let path=this.root;
+        let path=loader.root;
         if (this.alias.has(name)) name = this.alias.get(name);
         let dir=name.split('/');
         let fileName=dir.pop();
@@ -332,8 +364,8 @@ export class loader{
             case 'system':
                 if (name=='db'){
                     //load DB_result
-                    let retData=this._parseFile(path+'/system/database/DB_result.php');
-                    let qb_db=this._parseFile(path+'/system/database/drivers/mysql/mysql_result.php').funs;
+                    let retData=parse.parse.parseFile(path+'/system/database/DB_result.php');
+                    let qb_db=parse.parse.parseFile(path+'/system/database/drivers/mysql/mysql_result.php').funs;
                     let db=retData.funs;
                     let classData=retData.classData;
                     qb_db.forEach((v,k)=>{
@@ -344,14 +376,14 @@ export class loader{
                         classData: classData
                     });
                     //load DB_query_builder + DB_driver, with mysql_driver
-                    db=this._parseFile(path+'/system/database/DB_driver.php').funs;
-                    retData=this._parseFile(path+'/system/database/DB_query_builder.php');
+                    db=parse.parse.parseFile(path+'/system/database/DB_driver.php').funs;
+                    retData=parse.parse.parseFile(path+'/system/database/DB_query_builder.php');
                     qb_db=retData.funs;
                     classData=retData.classData;
                     qb_db.forEach((v,k)=>{
                         db.set(k,v);
                     });
-                    qb_db=this._parseFile(path+'/system/database/drivers/mysql/mysql_driver.php').funs;
+                    qb_db=parse.parse.parseFile(path+'/system/database/drivers/mysql/mysql_driver.php').funs;
                     qb_db.forEach((v,k)=>{
                         db.set(k,v);
                     });
@@ -380,146 +412,15 @@ export class loader{
             default:
                 return [];
         }
-        let data=this._parseFile(path);
+        let data=parse.parse.parseFile(path);
         this.cache[kind].set(name,data);
-        this.cached_info.set(this._path2uri(path),{kind:kind,name:name});
+        path=parse.parse.path2uri(path);
+        if (this.cached_info.has(path)){
+            var ori=this.cached_info.get(path);
+            ori.kind=kind;ori.name=name;
+            this.cached_info.set(path,ori);
+        }else this.cached_info.set(path,{kind:kind,name:name});
         return Array.from(data.funs.keys());
-    }
-
-    _parseFile(path:string):cache{
-        let content=fs.readFileSync(path,{encoding:'utf-8'});
-        let funs=new Map();
-        let match=null;
-        let uri = this._path2uri(path);
-        //get funs info
-        while ((match = this.re.fun.exec(content)) != null){
-            //ignore private method
-            if (match[1].startsWith('_')) continue;
-            let data:fun={param:null,
-                ret:'',
-                document:'',
-                location:{
-                    uri: uri,
-                    range:null
-                }
-            };
-            //set location
-            var lines=content.substr(0,match.index).split('\n');
-            var line=lines.length-1;
-            var startC=lines.pop().length-1;
-            data.location.range={
-                start:{line:line,character:startC+10},
-                end:{line:line,character:startC+match[0].length-1},
-            }
-            //set params
-            match[2]=match[2].trim();
-            data.param=match[2]==''?[]:match[2].split(',').map((v)=>{
-                return {label:v,document:''};
-            });
-            var str=lines[line-1];
-            if (str.indexOf('*/')>=0){//has JavaDoc
-                var lineNum=line-2;
-                var params=[];
-                while (!(str=lines[lineNum--].trim()).startsWith('/*')&&str.startsWith('*')&&lineNum>0) {
-                    str=str.substring(1).trim();
-                    if (str.startsWith('@')){
-                        if (str.startsWith('@return')){
-                            var ret=str.substr(7);
-                            if (ret.indexOf('|')>=0) ret=ret.split('|').shift().trim();
-                            else ret=ret.trim();
-                            data.ret=ret;
-                        }else if (str.startsWith('@param')){
-                            params.unshift(str.substr(6).trim());
-                        }
-                    }else{
-                        if (str.length>0){
-                            data.document=str+'\n'+data.document;
-                        }
-                    }
-                }
-                //set param document
-                for (var index =0,limit= Math.min(params.length,data.param.length); index < limit; index++) {
-                    data.param[index].documentation=params[index];
-                }
-            }
-            funs.set(match[1],data);
-        }
-        //get class name
-        let classData: class_data = null;
-        this.re.class.lastIndex=0;
-        while (match = this.re.class.exec(content)) {
-            let str = content.substr(0, match.index);
-            let arr = str.split('\n');
-            var suff = arr.pop();
-            if (suff.length>0&&!suff.endsWith(' ')) continue;//such as $class
-            else suff=suff.trim();
-            if (suff.startsWith('*') || suff.startsWith('/'))
-                continue;
-            let line = arr.length;//has poped
-            let character = arr.pop().length;
-            classData = {
-                name: match[1],
-                location: {
-                    uri: uri,
-                    range: {
-                        start: {
-                            line: line, character: character
-                        },
-                        end: {
-                            line: line, character: character + match[0].length
-                        }
-                    }
-                }
-            }
-            this._parseConst(content.substr(match.index),classData);
-            break;
-        }
-        return { funs: funs, classData: classData};
-    }
-
-    //get const and static
-    _parseConst(content:string,classData:class_data){
-        let con = new Map<string, const_data>();
-        let match = null;
-        var arr = content.split('\n');
-        let suffLine=classData.location.range.start.line;
-        while ((match = this.re.const.exec(content)) != null) {
-            var lines = content.substr(0, match.index).split('\n');
-            var line = lines.length - 1;
-            var suffLength = lines.pop().length;
-            var str = arr[line].trim();
-            let item: const_data = {
-                location: {
-                    uri: classData.location.uri,
-                    range: {
-                        start: { line: suffLine+line, character: suffLength },
-                        end: { line: suffLine +line, character: suffLength + str.length }
-                    }
-                },
-                value: match[2],
-                document: str == match[0] ? null : str.substr(match[0].length + 2)
-            }
-            con.set(match[1], item);
-        }
-        while ((match = this.re.static.exec(content)) != null) {
-            var lines = content.substr(0, match.index).split('\n');
-            var line = lines.length - 1;
-            var suffLength = lines.pop().length;
-            var str = arr[line].trim();
-            let item: const_data = {
-                location: {
-                    uri: classData.location.uri,
-                    range: {
-                        start: { line: suffLine + line, character: suffLength },
-                        end: { line: suffLine + line, character: suffLength + str.length }
-                    }
-                },
-                value: match[2],
-                document: str == match[0] ? null : str.substr(match[0].length + 2)
-            }
-            con.set('$' + match[1], item);
-        }
-        this.const.set(classData.name, con);
     }
 
     getClassInfo(claName:string):class_cache{
@@ -540,65 +441,5 @@ export class loader{
 
     getConstByClaname(className: string): Map<string, const_data>{
         return this.const.has(className) ? this.const.get(className) : new Map();
-    }
-
-    _path2uri(path:string):string{
-        if (path[0] !== '/') path = '/' + encodeURI(path.replace(/\\/g, '/')).replace(':', '%3A');
-        else path=encodeURI(path);
-        return `file://${path}`;
-    }
-
-    _allWords(text:string,position,completeToken=true):string{
-        let lines=text.split('\n');
-        let line=lines[position.line];
-        let cha:string;
-        if (completeToken){
-            cha=line.substr(0,position.character);
-        }else{
-            var addition=line.substr(position.character).match(this.re.completeWord)[0];
-            cha=line.substr(0,position.character)+addition;
-        }
-        let strConst=this.re.isStatic.exec(cha);
-        if (strConst!=null) return strConst[0];
-        cha=cha.trim();//.replace(/^[\)\}\]]*/,'');
-        var lineNum=position.line;
-        while (!cha.match(/^[a-zA-Z\$]/)&&lineNum>0) {
-            cha=lines[--lineNum].trim()+cha;
-        }
-        var $this=cha.indexOf('$this');
-        if ($this<0) return '';
-        else cha=cha.substr($this);
-        let total='';
-        for (var index = 0,j=cha.length; index < j; index++) {
-            if (cha[index]!='('||!total.match(this.re.method)) total+=cha[index];
-            else{
-                var end=cha.indexOf(')->',index);
-                if (end<0){
-                    var separator=cha.substr(index).match(this.re.endOfWords);
-                    if (separator){
-                        //the real sentense is in the next
-                        total='';
-                        cha=cha.substr(end+separator.length);
-                        continue;
-                    }else{
-                        //it end with ');'
-                        total+='()';
-                        break;
-                    }
-                }else{
-                    index=end;
-                    total+='()';
-                }
-            }
-        }
-        let arr=total.split('->');
-        for (index = arr.length-1; index >=0; index--) {
-            if (arr[index].endsWith('$this')){
-                arr=arr.slice(index);
-                arr[0]=arr[0].substr(arr[0].indexOf('$this'));
-                return arr.join('->');
-            }
-        }
-        return '';
     }
 }

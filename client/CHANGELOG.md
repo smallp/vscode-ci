@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.1.4 (2017/4/22)
+* Refactor the whole project.
+* Add const and static support for `self::`
+* Add function hints for `$this->` as VScode still not support this feature.
+
 ## 0.1.3 (2017/2/28)
 * change to Snippet in autoComplete
 * fix bug when there is sub-folder in model
