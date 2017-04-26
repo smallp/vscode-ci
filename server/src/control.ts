@@ -125,6 +125,7 @@ export class loader{
             let t:string;
             l=this.cache.system.keys();
             for(t of l){
+                if (t!='CI_DB_result')
                 res.push({label:t,kind:CompletionItemKind.Class,detail:'system class',data:textDocumentPosition});
             }
             l=this.cache.model.keys();
@@ -177,7 +178,9 @@ export class loader{
     }
 
     signature(textDocumentPosition: TextDocumentPositionParams,text:string): SignatureHelp{
-        let words=parse.parse.getWords(text,textDocumentPosition.position);
+        let words=parse.parse.getWords(text,textDocumentPosition.position,parse.wordsType.signature);
+        var params=words.split(parse.parse.paramDeli);
+        words=params.shift();
         let arr=words.split('->');
         let claName=arr[1];
         claName=this.alias.has(claName)?this.alias.get(claName):claName;
@@ -185,31 +188,15 @@ export class loader{
         let toRet:SignatureHelp={
             signatures:[],
             activeSignature:0,
-            activeParameter:0
+            activeParameter:parse.parse.cleanParam(params.join(''))
         };
-        var indexParam=method.indexOf('(');
-        if (indexParam>=0){
-            var param=method.substr(indexParam);
-            method=method.substring(0,indexParam);
-            let activeParam=0,lTokenNum=0;
-            for (var index = 0,size=param.length; index < size; index++) {
-                var c=param[index];
-                if (c==','&&lTokenNum==0){
-                    activeParam++;
-                }else if (c=='['){
-                    lTokenNum++;
-                }else if (c==']'){
-                    lTokenNum--;
-                }
-            }
-            toRet.activeParameter=activeParam;
-        }else return null;
+        method=method.substring(0,method.indexOf('('));
         let data:fun;
         let cla=this.getClassInfo(claName);
         data=cla&&cla.data.funs.get(method);
         if (!data) return null;
         var lable=method+'(';
-        var params=[];
+        params=[];
         for(var item of data.param){
             params.push(item.label);
         }
@@ -220,7 +207,7 @@ export class loader{
     }
 
     definition(textDocumentPosition: TextDocumentPositionParams,text:string):Location{
-        let words=parse.parse.getWords(text,textDocumentPosition.position,false);
+        let words=parse.parse.getWords(text,textDocumentPosition.position,parse.wordsType.half);
         let isStatic = loader.re.isStatic.exec(words);
         if (isStatic) {
             let constData = this.getConstByClaname(isStatic[1]);

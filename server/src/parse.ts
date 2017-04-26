@@ -5,7 +5,11 @@ import {
 } from 'vscode-languageserver';
 import * as fs from 'fs';
 import * as c from './control';
+export enum wordsType{
+    full,half,signature
+}
 export class parse{
+    static paramDeli='@@';
     static re={
         fun:/function (.+?)\((.*?)\)/g,
         method:/->[a-zA-Z0-9_]*$/,
@@ -13,7 +17,7 @@ export class parse{
         completeWord:/^[a-zA-Z0-9_]*(\()?/,
         const: /const ([a-zA-Z0-9_]*)=(.*);/ig,
         static: /static \$([a-zA-Z0-9_]*)=(.*);/ig,
-        class: /class (.*?)[ {]/ig
+        class: /class (.*?)\s*{/ig
     };
 
     static parseFile(path:string):c.api_parse{
@@ -213,15 +217,16 @@ export class parse{
         return res;
     }
 
-    static getWords(text:string,position,completeToken=true):string{
+    static getWords(text:string,position,type:wordsType=wordsType.full):string{
         let lines=text.split('\n');
         let line=lines[position.line];
         let cha:string;
-        if (completeToken){
-            cha=line.substr(0,position.character);
-        }else{
-            var addition=line.substr(position.character).match(this.re.completeWord)[0];
+        var addition:string;
+        if (type==wordsType.half){
+            addition=line.substr(position.character).match(this.re.completeWord)[0];
             cha=line.substr(0,position.character)+addition;
+        }else{
+            cha=line.substr(0,position.character);
         }
         let strConst=c.loader.re.isStatic.exec(cha);
         if (strConst!=null) return strConst[0];
@@ -233,31 +238,9 @@ export class parse{
         var $this=cha.indexOf('$this');
         if ($this<0) return '';
         else cha=cha.substr($this);
-        let total='';
-        for (var index = 0,j=cha.length; index < j; index++) {
-            if (cha[index]!='('||!total.match(this.re.method)) total+=cha[index];
-            else{
-                var end=cha.indexOf(')->',index);
-                if (end<0){
-                    var separator=cha.substr(index).match(this.re.endOfWords);
-                    if (separator){
-                        //the real sentense is in the next
-                        total='';
-                        cha=cha.substr(end+separator.length);
-                        continue;
-                    }else{
-                        //it end with ');'
-                        total+='()';
-                        break;
-                    }
-                }else{
-                    index=end;
-                    total+='()';
-                }
-            }
-        }
+        let total=this.cleanBracket(cha,type);
         let arr=total.split('->');
-        for (index = arr.length-1; index >=0; index--) {
+        for (var index = arr.length-1; index >=0; index--) {
             if (arr[index].endsWith('$this')){
                 arr=arr.slice(index);
                 arr[0]=arr[0].substr(arr[0].indexOf('$this'));
@@ -265,6 +248,59 @@ export class parse{
             }
         }
         return '';
+    }
+
+    static cleanBracket(words:string,type:wordsType=wordsType.full):string{
+        var total='';
+        for (var index = 0,j=words.length; index < j; index++) {
+            if (words[index]!='(') total+=words[index];
+            else{
+                var end=words.indexOf(')->',index);
+                if (end<0){
+                    //the real sentense is in the bracket
+                    var realWords=words.substr(index+1);
+                    var $this=realWords.indexOf('$this');
+                    if ($this<0){
+                        if (type==wordsType.signature){
+                            return total+'()'+this.paramDeli+realWords;
+                        }else return '';
+                    } else{
+                        var t=this.cleanBracket(realWords.substr($this),type);
+                        if (t==''){
+                            t=total+'()';
+                            if (type==wordsType.signature){
+                                t+=this.paramDeli+realWords;
+                            }
+                        }
+                        return t;
+                    }
+                }else{
+                    index=end;
+                    total+='()';
+                }
+            }
+        }
+        return total;
+    }
+
+    static cleanParam(words:string):number{
+        var pair={'"':'"','\'':'\'','(':')',"[":"]"};
+        var total='',ignore='';
+        for (var index = 0,lim=words.length; index <lim; index++) {
+            var c=words[index];
+            if (c=='\\'){
+                index++;
+                continue;
+            }else if (ignore==''){
+                if (c in pair){
+                    ignore=pair[c];
+                    continue;
+                }else total+=c;
+            }else{
+                if (c==ignore) ignore='';
+            }
+        }
+        return total.split(',').length-1;
     }
 
     static path2uri(path:string):string{

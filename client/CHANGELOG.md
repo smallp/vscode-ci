@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.1.5 (2017/4/26)
+* Work fine in `$this->db->query($this->)`
+* fix bug in loading loader class.
+* Work fine in signature.
+
 ## 0.1.4 (2017/4/22)
 * Refactor the whole project.
 * Add const and static support for `self::`
