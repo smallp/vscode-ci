@@ -10,6 +10,7 @@ export enum wordsType{
 }
 export class parse{
     static paramDeli='@@';
+    static pair={'"':'"','\'':'\'','(':')',"[":"]"};
     static re={
         fun:/function (.+?)\((.*?)\)/g,
         method:/->[a-zA-Z0-9_]*$/,
@@ -65,9 +66,10 @@ export class parse{
                         }else if (str.startsWith('@param')){
                             params.unshift(str.substr(6).trim());
                         }
+                        data.document='';
                     }else{
                         if (str.length>0){
-                            data.document=str+'\n'+data.document;
+                            data.document=''+str+'  \n'+data.document;
                         }
                     }
                 }
@@ -255,52 +257,77 @@ export class parse{
         for (var index = 0,j=words.length; index < j; index++) {
             if (words[index]!='(') total+=words[index];
             else{
-                var end=words.indexOf(')->',index);
-                if (end<0){
-                    //the real sentense is in the bracket
-                    var realWords=words.substr(index+1);
-                    var $this=realWords.indexOf('$this');
-                    if ($this<0){
-                        if (type==wordsType.signature){
-                            return total+'()'+this.paramDeli+realWords;
-                        }else return '';
-                    } else{
-                        var t=this.cleanBracket(realWords.substr($this),type);
-                        if (t==''){
-                            t=total+'()';
-                            if (type==wordsType.signature){
-                                t+=this.paramDeli+realWords;
-                            }
+                //loop for find ')->' in incorrect place. Just for wordsType.full
+                var tindex=index;
+                do {
+                    var end=words.indexOf(')->',tindex);
+                    if (end<0){
+                        //endwith '(', it is a method
+                        if (index==j-1&&type==wordsType.half){
+                            total+='()';
+                            return total;
                         }
-                        return t;
+                        //the real sentense is in the bracket
+                        var realWords=words.substr(index+1);
+                        var $this=realWords.indexOf('$this');
+                        if ($this<0){
+                            if (type==wordsType.signature){
+                                return total+'()'+this.paramDeli+realWords;
+                            }else return '';
+                        } else{
+                            var t=this.cleanBracket(realWords.substr($this),type);
+                            if (t==''){
+                                t=total+'()';
+                                if (type==wordsType.signature){
+                                    t+=this.paramDeli+realWords;
+                                }
+                            }
+                            return t;
+                        }
+                    }else{
+                        var param=words.slice(index+1,end);
+                        param=this.cleanParam(param);
+                        param=param[param.length-1];
+                        if (param in this.pair){// there is ')->' in param of one method
+                            tindex=end+1;
+                            continue;
+                        }else{
+                            index=end;
+                            total+='()';
+                            break;
+                        }
                     }
-                }else{
-                    index=end;
-                    total+='()';
-                }
+                } while (true);
             }
         }
         return total;
     }
 
-    static cleanParam(words:string):number{
-        var pair={'"':'"','\'':'\'','(':')',"[":"]"};
-        var total='',ignore='';
+    static cleanParam(words:string):string{
+        var hardPair=['"',"'"];
+        var total='',ignore='',stack=[];
         for (var index = 0,lim=words.length; index <lim; index++) {
             var c=words[index];
             if (c=='\\'){
                 index++;
                 continue;
             }else if (ignore==''){
-                if (c in pair){
-                    ignore=pair[c];
+                if (c in this.pair){
+                    ignore=this.pair[c];
+                    stack.push(c);
                     continue;
                 }else total+=c;
             }else{
-                if (c==ignore) ignore='';
+                if (c==ignore){//get the end
+                    stack.pop();
+                    ignore=stack.length>0?stack[stack.length-1]:'';
+                }else if (c in hardPair &&!(ignore in hardPair)){//' " level is higher
+                    stack.push(c);
+                    ignore=c;
+                }
             }
         }
-        return total.split(',').length-1;
+        return total+stack.join();
     }
 
     static path2uri(path:string):string{

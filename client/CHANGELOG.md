@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.1.9 (2017/5/4)
+* fix bug in goto definition
+* Add hover.
+* Finish the extension.
+
 ## 0.1.6 (2017/4/26)
 * fix bug in parsing const
 

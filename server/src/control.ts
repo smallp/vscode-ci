@@ -1,7 +1,7 @@
 import {
     SymbolInformation,SymbolKind,Location,CompletionItemKind,
     TextDocumentPositionParams,CompletionItem,SignatureHelp,
-    ParameterInformation,Range
+    ParameterInformation,Range,Hover
 } from 'vscode-languageserver';
 import * as fs from 'fs';
 import * as parse from './parse';
@@ -188,7 +188,7 @@ export class loader{
         let toRet:SignatureHelp={
             signatures:[],
             activeSignature:0,
-            activeParameter:parse.parse.cleanParam(params.join(''))
+            activeParameter:parse.parse.cleanParam(params.join('')).split(',').length-1
         };
         method=method.substring(0,method.indexOf('('));
         let data:fun;
@@ -241,6 +241,22 @@ export class loader{
             let info:fun=data.data.funs.get(method)||this.cache.system.get('CI_DB_result').funs.get(method);
             return info?info.location:null;
         }
+    }
+
+    hover(textDocumentPosition: TextDocumentPositionParams,text:string):Hover{
+        let words=parse.parse.getWords(text,textDocumentPosition.position,parse.wordsType.half);
+        words=words.split(parse.parse.paramDeli)[0];
+        let arr=words.split('->');
+        if (arr.length<3) return null;
+        let claName=arr[1];
+        claName=this.alias.has(claName)?this.alias.get(claName):claName;
+        let method=arr.pop();
+        method=method.substring(0,method.indexOf('('));
+        let data:fun;
+        let cla=this.getClassInfo(claName);
+        data=cla&&cla.data.funs.get(method);
+        if (!data) return null;
+        return {contents:data.document};
     }
 
     initModels(root:string):void{

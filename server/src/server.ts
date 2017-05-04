@@ -10,7 +10,7 @@ import {
 	TextDocuments, TextDocument, Diagnostic, DiagnosticSeverity,
 	InitializeParams, InitializeResult, TextDocumentPositionParams,
 	CompletionItem, CompletionItemKind, InsertTextFormat,
-	DocumentSymbolParams,SymbolInformation,SignatureHelp,Location
+	DocumentSymbolParams,SymbolInformation,SignatureHelp,Location,Hover
 } from 'vscode-languageserver';
 import * as loader from './control';
 let mLoader=new loader.loader();
@@ -34,6 +34,7 @@ connection.onInitialize((params): InitializeResult => {
 			textDocumentSync:TextDocumentSyncKind.Full,
 			documentSymbolProvider:true,
 			definitionProvider :true,
+			hoverProvider : true,
 			signatureHelpProvider : {
 				triggerCharacters: [ '(' ]
 			},
@@ -122,6 +123,12 @@ connection.onDefinition((position:TextDocumentPositionParams):Location=>{
 		position,
 		documents.get(position.textDocument.uri).getText());
 });
+
+connection.onHover((position:TextDocumentPositionParams):Hover=>{
+	return mLoader.hover(
+		position,
+		documents.get(position.textDocument.uri).getText());
+})
 
 // Listen on the connection
 connection.listen();

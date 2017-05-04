@@ -29,11 +29,15 @@ Pressing F1 in VS Code, and type @. Then you can get all the methods in this fil
 
 You can goto definition for all the models, libraries, their methods and const variables.
 
+### Hover
+
+You can hover to get a method's documents.
+
 ## Known issues
-* If there are classes in one file, it can not work well. However, that is a rare situation. So there is no plan to fix it.
+* If there are classes in one file, it may not work well. However, that is a rare situation. So there is no plan to fix it.
 * There is no `library` in setting because as you open a file including `$this->load->library`, the file would be parsed. Add a issue if you believe that is nesessary.
 
-## Todo:
-1. Add the feature of hover.
+## Author's words
+From now, the extension's all feature has been all done. In the rest of the time, I will only fix bugs for it. Thanks for using.
 
 **Enjoy!**
