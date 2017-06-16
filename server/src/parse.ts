@@ -8,6 +8,13 @@ import * as c from './control';
 export enum wordsType{
     full,half,signature
 }
+export enum completeType{
+    complete,less,over
+}
+export interface paramInfo{
+    complete:completeType;
+    param:string;
+}
 export class parse{
     static paramDeli='@@';
     static pair={'"':'"','\'':'\'','(':')',"[":"]"};
@@ -234,12 +241,9 @@ export class parse{
         if (strConst!=null) return strConst[0];
         cha=cha.trim();//.replace(/^[\)\}\]]*/,'');
         var lineNum=position.line;
-        while (!cha.match(/^[a-zA-Z\$]/)&&lineNum>0) {
+        while (!cha.match(/^[a-zA-Z\(\$]/)&&lineNum>0) {
             cha=lines[--lineNum].trim()+cha;
         }
-        var $this=cha.indexOf('$this');
-        if ($this<0) return '';
-        else cha=cha.substr($this);
         let total=this.cleanBracket(cha,type);
         let arr=total.split('->');
         for (var index = arr.length-1; index >=0; index--) {
@@ -253,6 +257,9 @@ export class parse{
     }
 
     static cleanBracket(words:string,type:wordsType=wordsType.full):string{
+        var $this=words.indexOf('$this');
+        if ($this<0) return '';
+        else words=words.substr($this);
         var total='';
         for (var index = 0,j=words.length; index < j; index++) {
             if (words[index]!='(') total+=words[index];
@@ -264,8 +271,12 @@ export class parse{
                     if (end<0){
                         //endwith '(', it is a method
                         if (index==j-1&&type==wordsType.half){
-                            total+='()';
-                            return total;
+                            return total+'()';
+                        }else if (type==wordsType.signature){
+                            var p=this.cleanParam(words.substr(tindex+1));
+                            if (p.complete==completeType.complete){
+                                return total+'()'+this.paramDeli+p.param;
+                            }
                         }
                         //the real sentense is in the bracket
                         var realWords=words.substr(index+1);
@@ -286,12 +297,13 @@ export class parse{
                         }
                     }else{
                         var param=words.slice(index+1,end);
-                        param=this.cleanParam(param);
-                        param=param[param.length-1];
-                        if (param in this.pair){// there is ')->' in param of one method
+                        var p=this.cleanParam(param);
+                        if (p.complete==completeType.less){// there is ')->' in param of one method
                             tindex=end+1;
                             continue;
-                        }else{
+                        }else if (p.complete==completeType.over){//this is not the real sentence
+                            return this.cleanBracket(words.substr(index+p.param.length+2),type);
+                        }else {
                             index=end;
                             total+='()';
                             break;
@@ -303,7 +315,7 @@ export class parse{
         return total;
     }
 
-    static cleanParam(words:string):string{
+    static cleanParam(words:string):paramInfo{
         var hardPair=['"',"'"];
         var total='',ignore='',stack=[];
         for (var index = 0,lim=words.length; index <lim; index++) {
@@ -316,7 +328,8 @@ export class parse{
                     ignore=this.pair[c];
                     stack.push(c);
                     continue;
-                }else total+=c;
+                }else if (c==')') return {param:total,complete:completeType.over};
+                else total+=c;
             }else{
                 if (c==ignore){//get the end
                     stack.pop();
@@ -327,7 +340,7 @@ export class parse{
                 }
             }
         }
-        return total+stack.join();
+        return {param:total,complete:stack.length==0?completeType.complete:completeType.less};
     }
 
     static path2uri(path:string):string{

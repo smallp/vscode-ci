@@ -1,7 +1,7 @@
 {
   "name": "small-ci",
   "description": "Language server in node for small-ci.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": "small",
   "license": "MIT",
   "engines": {

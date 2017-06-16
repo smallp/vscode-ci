@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.2.0 (2017/6/16)
+* fix bug in Signature
+* add definition for $this->method()
+
 ## 0.1.9 (2017/5/4)
 * fix bug in goto definition
 * Add hover.

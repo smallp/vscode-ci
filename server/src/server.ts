@@ -96,11 +96,6 @@ connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): Comp
 connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
 	if (item.kind==CompletionItemKind.Class){
 		item.insertText=item.label+'-';
-		// item.command={
-		// 	command:'vscode.executecompletionitemprovider',
-		// 	title:'',
-		// 	arguments: [{ uri: item.data.textDocument.uri},{}]
-		// }
 	}else if (item.kind==CompletionItemKind.Method){
 		item.insertText = item.label + '($1)$0';
 		item.insertTextFormat = InsertTextFormat.Snippet;

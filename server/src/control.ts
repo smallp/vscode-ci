@@ -179,16 +179,20 @@ export class loader{
 
     signature(textDocumentPosition: TextDocumentPositionParams,text:string): SignatureHelp{
         let words=parse.parse.getWords(text,textDocumentPosition.position,parse.wordsType.signature);
-        var params=words.split(parse.parse.paramDeli);
-        words=params.shift();
-        let arr=words.split('->');
+        var arr=words.split(parse.parse.paramDeli);
+        words=arr.shift();
+        let params=arr.join('');
+        var t=parse.parse.cleanParam(params);
+        if (t.complete==parse.completeType.over) return null;
+        else params=t.param;
+        arr=words.split('->');
         let claName=arr[1];
         claName=this.alias.has(claName)?this.alias.get(claName):claName;
         let method=arr.pop();
         let toRet:SignatureHelp={
             signatures:[],
             activeSignature:0,
-            activeParameter:parse.parse.cleanParam(params.join('')).split(',').length-1
+            activeParameter:params.split(',').length-1
         };
         method=method.substring(0,method.indexOf('('));
         let data:fun;
@@ -196,11 +200,11 @@ export class loader{
         data=cla&&cla.data.funs.get(method);
         if (!data) return null;
         var lable=method+'(';
-        params=[];
+        arr=[];
         for(var item of data.param){
-            params.push(item.label);
+            arr.push(item.label);
         }
-        lable+=params.join(',')+')';
+        lable+=arr.join(',')+')';
         let signature={label:lable,parameters:data.param};
         toRet.signatures=[signature];
         return toRet;
@@ -223,7 +227,16 @@ export class loader{
             let data=this.getClassInfo(arr[1]);
             if (data&&data.data.classData){
                 return data.data.classData.location;
-            }else return null;
+            }else{
+                if (!arr[1].endsWith('()')) return null;
+                let fun=arr[1].slice(0,-2);
+                let funs=parse.parse.functions(text);
+                for (var x of funs){
+                    if (x.name==fun){
+                        return {uri:textDocumentPosition.textDocument.uri,range:x.Range};
+                    }
+                }
+            }
         }else if (arr.length==3){
             let data=this.getClassInfo(arr[1]);
             if (!data) return null;
