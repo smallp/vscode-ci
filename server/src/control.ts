@@ -63,6 +63,8 @@ export class loader{
     const = new Map<string, Map<string, const_data>>();
     //use for class alias
     alias=new Map<string,string>();
+    //use for quick search and display
+    display=new Map<string,string>();
     //use for refresh cache when file changed
     cached_info=new Map<string,cache_info>();
     constructor(){
@@ -128,19 +130,10 @@ export class loader{
                 if (t!='CI_DB_result')
                 res.push({label:t,kind:CompletionItemKind.Class,detail:'system class',data:textDocumentPosition});
             }
-            l=this.cache.model.keys();
-            for(t of l){
-                if (t.indexOf('/')<0)
-                    res.push({
-                        label: t, kind: CompletionItemKind.Class, data: textDocumentPosition,
-                        detail:'model '+(this.alias.has(t)?this.alias.get(t):t)});
-            }
-            l=this.cache.library.keys();
-            for(t of l){
-                if (t.indexOf('/')<0)
-                    res.push({
-                        label: t, kind: CompletionItemKind.Class, data: textDocumentPosition,
-                        detail:'library '+(this.alias.has(t)?this.alias.get(t):t)});
+            for(var [name,type] of this.display){
+                res.push({
+                    label: name, kind: CompletionItemKind.Class, data: textDocumentPosition,
+                    detail:type+' '+(this.alias.has(name)?this.alias.get(name):name)});
             }
             l=parse.parse.functions(text);
             var item:api_fun;
@@ -214,7 +207,17 @@ export class loader{
         let words=parse.parse.getWords(text,textDocumentPosition.position,parse.wordsType.half);
         let isStatic = loader.re.isStatic.exec(words);
         if (isStatic) {
-            let constData = this.getConstByClaname(isStatic[1]);
+            var claName=isStatic[1];
+            if (claName.toLowerCase()=='self'){
+                var claInfo=this.cached_info.get(textDocumentPosition.textDocument.uri);
+                if (!claInfo){
+                    this.parseConst(text,textDocumentPosition.textDocument.uri);
+                    claInfo=this.cached_info.get(textDocumentPosition.textDocument.uri);
+                    if (!claInfo) return res;
+                }
+                claName=claInfo.claName;
+            }
+            let constData = this.getConstByClaname(claName);
             if (constData.has(isStatic[2])){
                 var data=constData.get(isStatic[2]);
                 return data.location;
@@ -273,8 +276,11 @@ export class loader{
     }
 
     initModels(root:string):void{
-        loader.root=root;
-        let path=root+'/application/models/';
+        if (root!=null){
+            loader.root=root;
+        }
+        let path=loader.root+'/application/models/';
+        this.cache.model=new Map<string,cache>();
         this._initModels(path,'');
     }
 
@@ -285,10 +291,16 @@ export class loader{
             if (err) return ;
             for(let file of files){
                 if (file.endsWith('.php')){
-                    file = (dir + file.slice(0, -4)).toLowerCase();
+                    file = dir + file.slice(0, -4);
                     that.cache.model.set(file, null);
-                    file = that._setAlise(file);
-                    that.cache.model.set(file, null);
+                    if (dir==''){
+                        //add to display if it is in root folder
+                        var name=parse.parse.modFirst(file,false);
+                        that.display.set(name,'model');
+                        if (name!=file) that.alias.set(name,file);
+                    }
+                    // file = that._setAlise(file);
+                    // that.cache.model.set(file, null);
                 }else if (!file.endsWith('html')){
                     that._initModels(root,dir+file+'/');
                 }
@@ -303,32 +315,32 @@ export class loader{
             if (match[1]=='model'||match[1]=='library'){
                 var a:Array<string>=match[2].split(',');
                 let name:string=a[0].trim().slice(1,-1);
+                let alias:string;
                 if (a.length==1&&this.cache[match[1]].has(name)) continue;//no alias, has loaded
                 if (match[1]=='model'){
                     if (a.length>1){
                         //has alias
-                        var alias = a[1].trim().slice(1, -1).toLowerCase();
-                        name = name.toLowerCase();
-                        this.alias.set(alias,name);
-                        this.cache[match[1]].set(alias,null);
+                        alias = a[1].trim().slice(1, -1);
+                        this._setAlise(name,alias);
                     }else{
-                        name=this._setAlise(name);
+                        alias=this._setAlise(name);
                     }
                 }else{
                     if (a.length>=3){
-                        var alias=a.pop().trim();
+                        alias=a.pop().trim();
                         if (alias.match(/^['"](.+?)['"]$/)){
                             //has alias
-                            alias=alias.slice(1,-1).toLowerCase();
-                            this.alias.set(alias,name);
-                            this.cache[match[1]].set(alias,null);
+                            alias=alias.slice(1,-1);
+                            this._setAlise(name,alias);
                         }else{
-                            name=this._setAlise(name);
+                            alias=this._setAlise(name);
                         }
                     }else{
-                        name=this._setAlise(name);
+                        alias=this._setAlise(name);
                     }
                 }
+                this.display.set(alias,match[1]);
+                if (this.alias.has(alias)) name=this.alias.get(alias);
                 if (!this.cache[match[1]].get(name)){
                     this.parseFile(name, match[1]);
                 }
@@ -336,14 +348,19 @@ export class loader{
         }
     }
 
-    _setAlise(name:string):string{
-        let _name=name;
+    _setAlise(name:string,alias:string=name):string{
         if (name.indexOf('/')>=0){
             //model is in a directory. alias the name
-            _name=name.split('/').pop().toLowerCase();
-            this.alias.set(_name,name);
-        }else _name=name.toLowerCase();
-        return _name;
+            var arr=name.split('/');
+            var fileName=arr.pop();
+            alias=alias==name?fileName:alias;
+            name=arr.join('/')+'/'+parse.parse.modFirst(fileName);
+            this.alias.set(alias,name);
+        }else{
+            name=parse.parse.modFirst(name);
+            if (alias!=name) this.alias.set(alias,name);
+        }
+        return alias;
     }
 
     //load file in setting-other

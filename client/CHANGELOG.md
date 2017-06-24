@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.2.1 (2017/6/24)
+* Class name now becomes case sensitivity. See [#3](https://github.com/smallp/vscode-ci/issues/3).
+* Going to definition works fine for `self::`
+* Add commend `CI:refresh Model` to refresh the model folder if you add or delete model files.
+
 ## 0.2.0 (2017/6/16)
 * fix bug in Signature
 * add definition for $this->method()

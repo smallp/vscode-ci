@@ -343,6 +343,10 @@ export class parse{
         return {param:total,complete:stack.length==0?completeType.complete:completeType.less};
     }
 
+    static modFirst(s:string,up=true):string{
+        return (up?s[0].toUpperCase():s[0].toLowerCase())+s.substr(1);
+    }
+
     static path2uri(path:string):string{
         if (path[0] !== '/') path = '/' + encodeURI(path.replace(/\\/g, '/')).replace(':', '%3A');
         else path=encodeURI(path);

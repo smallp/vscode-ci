@@ -10,7 +10,8 @@ import {
 	TextDocuments, TextDocument, Diagnostic, DiagnosticSeverity,
 	InitializeParams, InitializeResult, TextDocumentPositionParams,
 	CompletionItem, CompletionItemKind, InsertTextFormat,
-	DocumentSymbolParams,SymbolInformation,SignatureHelp,Location,Hover
+	DocumentSymbolParams,SymbolInformation,SignatureHelp,Location,Hover,
+	ExecuteCommandParams
 } from 'vscode-languageserver';
 import * as loader from './control';
 let mLoader=new loader.loader();
@@ -41,6 +42,9 @@ connection.onInitialize((params): InitializeResult => {
 			completionProvider: {
 				resolveProvider: true,
 				triggerCharacters:['>',':']
+			},
+			executeCommandProvider:{
+				commands:['extension.refreshModel']
 			}
 		}
 	}
@@ -83,7 +87,9 @@ documents.onDidSave((e)=>{
 		}else mLoader.parseFile(info.name,info.kind);
 	}
 });
-
+connection.onExecuteCommand((param:ExecuteCommandParams)=>{
+	mLoader.initModels(null);
+})
 // This handler provides the initial list of the completion items.
 connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
 	return mLoader.complete(

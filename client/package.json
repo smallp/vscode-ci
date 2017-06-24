@@ -4,7 +4,7 @@
 	"description": "Code completion for PHP codeigniter framework",
 	"author": "Small",
 	"license": "MIT",
-	"version": "0.2.0",
+	"version": "0.2.1",
 	"publisher":"small",
   "engines": {
     "vscode": "^1.8.0"
@@ -43,7 +43,11 @@
           "description": "Path of files that need parse. That is just for addition const support."
         }
       }
-    }
+    },
+    "commands":[{
+      "command":"extension.refreshModel",
+      "title": "CI:refresh Model"
+    }]
   },
   "scripts": {
     "vscode:prepublish": "tsc -p ./",

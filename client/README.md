@@ -18,6 +18,7 @@ It can provide code completion for all models and some system classes (include d
 2. When you select the class, it will insert the class with '-'. So while you type '>' it will display all the methods of the class.
 3. It supports method chaining only for **db** class.
 4. When you hint `className::`, it will display const and static variables.
+5. If you add or delete a model file, you now can use command 'refresh Model' to refresh the model folders.
 
 As for the library, the extension will not parse the file unless you open a file loaded the library. It means when you open a file that include the code `$this->load->library('foo')`, the extension will search for the file and parse it.
 
