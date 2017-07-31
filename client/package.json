@@ -4,7 +4,7 @@
 	"description": "Code completion for PHP codeigniter framework",
 	"author": "Small",
 	"license": "MIT",
-	"version": "0.2.1",
+	"version": "0.2.2",
 	"publisher":"small",
   "engines": {
     "vscode": "^1.8.0"

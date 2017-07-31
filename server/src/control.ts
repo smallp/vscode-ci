@@ -54,6 +54,7 @@ export class loader{
         isStatic:/([a-zA-Z0-9_]*)::([a-zA-Z0-9_\$]*)$/
     };
     cache={
+        //include functions and class data
         system:new Map<string,cache>(),
         model:new Map<string,cache>(),
         // helper:new Map<string,Map<string,fun>>(),
@@ -213,7 +214,7 @@ export class loader{
                 if (!claInfo){
                     this.parseConst(text,textDocumentPosition.textDocument.uri);
                     claInfo=this.cached_info.get(textDocumentPosition.textDocument.uri);
-                    if (!claInfo) return res;
+                    if (!claInfo) return null;
                 }
                 claName=claInfo.claName;
             }
@@ -222,6 +223,7 @@ export class loader{
                 var data=constData.get(isStatic[2]);
                 return data.location;
             }
+            return null;
         }
         let arr=words.split('->');
         if (arr.length==1||arr[0]!='$this')
@@ -446,6 +448,10 @@ export class loader{
                 return [];
         }
         let data=parse.parse.parseFile(path);
+        data.consts.forEach((v,k)=>{
+            this.const.set(k,v);
+        });
+        delete data.consts;
         this.cache[kind].set(name,data);
         path=parse.parse.path2uri(path);
         if (this.cached_info.has(path)){
@@ -473,6 +479,17 @@ export class loader{
     }
 
     getConstByClaname(className: string): Map<string, const_data>{
-        return this.const.has(className) ? this.const.get(className) : new Map();
+        if (this.const.has(className)) return this.const.get(className);
+        else{
+            //maybe the class is model. It has not been parsed yet
+            for (var kind in this.cache){
+                if (this.cache[kind].has(className)){
+                    var claData:cache=this.cache[kind].get(className);
+                    if (!claData) this.parseFile(className,kind);
+                    return this.const.has(className)?this.const.get(className):new Map();
+                }
+            }
+            return new Map();
+        }
     }
 }

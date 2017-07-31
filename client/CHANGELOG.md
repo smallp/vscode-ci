@@ -1,5 +1,8 @@
 # Change Log
 
+## 0.2.2 (2017/7/31)
+* fix bug in autoComplete
+
 ## 0.2.1 (2017/6/24)
 * Class name now becomes case sensitivity. See [#3](https://github.com/smallp/vscode-ci/issues/3).
 * Going to definition works fine for `self::`

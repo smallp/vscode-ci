@@ -112,8 +112,9 @@ export class parse{
                     }
                 }
             }
+            break;
         }
-        let consts=this.parseConst(content,path);
+        let consts=this.parseConst(content,uri);
         //get class name
         return { funs: funs, classData: classData,consts:consts};
     }
@@ -150,11 +151,13 @@ export class parse{
                 }
             }
             if (class_begin>0){
+                //there is already a class. parse data of this class.
                 var data=this._parseConst(content.substring(class_begin,match.index),preClassD);
                 resConst.set(preClassD.name, data);
                 preClassD=classData;
             }
             class_begin=match.index;
+            preClassD=classData;
         }
         //muti-class support
         if (classData!=null){
@@ -242,7 +245,10 @@ export class parse{
         cha=cha.trim();//.replace(/^[\)\}\]]*/,'');
         var lineNum=position.line;
         while (!cha.match(/^[a-zA-Z\(\$]/)&&lineNum>0) {
-            cha=lines[--lineNum].trim()+cha;
+            var l=lines[--lineNum].trim();
+            var hasComment=l.indexOf('//');
+            if (hasComment>=0) l=l.substr(0,hasComment).trim();
+            cha=l+cha;
         }
         let total=this.cleanBracket(cha,type);
         let arr=total.split('->');
@@ -326,7 +332,7 @@ export class parse{
             }else if (ignore==''){
                 if (c in this.pair){
                     ignore=this.pair[c];
-                    stack.push(c);
+                    stack.push(ignore);
                     continue;
                 }else if (c==')') return {param:total,complete:completeType.over};
                 else total+=c;
@@ -334,7 +340,7 @@ export class parse{
                 if (c==ignore){//get the end
                     stack.pop();
                     ignore=stack.length>0?stack[stack.length-1]:'';
-                }else if (c in hardPair &&!(ignore in hardPair)){//' " level is higher
+                }else if (hardPair.indexOf(c) >=0 && hardPair.indexOf(ignore)==-1){//' " level is higher
                     stack.push(c);
                     ignore=c;
                 }
