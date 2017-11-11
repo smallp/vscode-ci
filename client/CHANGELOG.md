@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.2.3 (2017/11/11)
+* add support for Multi-root workspaces
+* be able to set system and application folders.
+
 ## 0.2.2 (2017/7/31)
 * fix bug in autoComplete
 

@@ -29,7 +29,12 @@ export class parse{
     };
 
     static parseFile(path:string):c.api_parse{
-        let content=fs.readFileSync(path,{encoding:'utf-8'});
+        let content='';
+        try {
+            content=fs.readFileSync(path,{encoding:'utf-8'});
+        } catch (e) {
+            return null;
+        }
         let funs=new Map();
         let match=null;
         let uri = this.path2uri(path);

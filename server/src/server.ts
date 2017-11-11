@@ -7,11 +7,11 @@
 import {
 	IPCMessageReader, IPCMessageWriter,
 	createConnection, IConnection, TextDocumentSyncKind,
-	TextDocuments, TextDocument, Diagnostic, DiagnosticSeverity,
-	InitializeParams, InitializeResult, TextDocumentPositionParams,
+	TextDocuments, InitializeResult, TextDocumentPositionParams,
 	CompletionItem, CompletionItemKind, InsertTextFormat,
 	DocumentSymbolParams,SymbolInformation,SignatureHelp,Location,Hover,
-	ExecuteCommandParams
+	ExecuteCommandParams,
+	CompletionList
 } from 'vscode-languageserver';
 import * as loader from './control';
 let mLoader=new loader.loader();
@@ -28,7 +28,7 @@ documents.listen(connection);
 // After the server has started the client sends an initilize request. The server receives
 // in the passed params the rootPath of the workspace plus the client capabilites. 
 connection.onInitialize((params): InitializeResult => {
-	mLoader.initModels(params.rootPath);
+	mLoader.initModels(params.rootUri);
 	return {
 		capabilities: {
 			// Tell the client that the server works in FULL text document sync mode
@@ -57,6 +57,8 @@ interface Settings {
 interface CI {
 	model: Array<string>;
 	other: Array<string>;
+	system:string;
+	app:string;
 }
 
 connection.onDidChangeConfiguration((change) => {
@@ -68,6 +70,8 @@ connection.onDidChangeConfiguration((change) => {
 	for (str of settings.CI.other) {
 		mLoader.loadOther(str);
 	}
+	loader.loader.system=settings.CI.system;
+	loader.loader.app=settings.CI.app;
 });
 
 documents.onDidOpen((e)=>{
@@ -92,7 +96,8 @@ connection.onExecuteCommand((param:ExecuteCommandParams)=>{
 })
 // This handler provides the initial list of the completion items.
 connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
-	return mLoader.complete(
+	if (textDocumentPosition.textDocument.uri.indexOf(loader.loader.root)<0) return [];
+	else return mLoader.complete(
 		textDocumentPosition,
 		documents.get(textDocumentPosition.textDocument.uri).getText());
 });
@@ -100,6 +105,7 @@ connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): Comp
 // This handler resolve additional information for the item selected in
 // the completion list.
 connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
+	console.log(item);
 	if (item.kind==CompletionItemKind.Class){
 		item.insertText=item.label+'-';
 	}else if (item.kind==CompletionItemKind.Method){
@@ -109,24 +115,28 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
 	return item;
 });
 
-connection.onDocumentSymbol((pram:DocumentSymbolParams):SymbolInformation[]=> {
-	return mLoader.allFun(documents.get(pram.textDocument.uri));
+connection.onDocumentSymbol((param:DocumentSymbolParams):SymbolInformation[]=> {
+	if (param.textDocument.uri.indexOf(loader.loader.root)<0) return [];
+	else return mLoader.allFun(documents.get(param.textDocument.uri));
 });
 
 connection.onSignatureHelp((position:TextDocumentPositionParams):SignatureHelp=>{
-	return mLoader.signature(
+	if (position.textDocument.uri.indexOf(loader.loader.root)<0) return null;
+	else return mLoader.signature(
 		position,
 		documents.get(position.textDocument.uri).getText());
 });
 
 connection.onDefinition((position:TextDocumentPositionParams):Location=>{
-	return mLoader.definition(
+	if (position.textDocument.uri.indexOf(loader.loader.root)<0) return null;
+	else return mLoader.definition(
 		position,
 		documents.get(position.textDocument.uri).getText());
 });
 
 connection.onHover((position:TextDocumentPositionParams):Hover=>{
-	return mLoader.hover(
+	if (position.textDocument.uri.indexOf(loader.loader.root)<0) return null;
+	else return mLoader.hover(
 		position,
 		documents.get(position.textDocument.uri).getText());
 })

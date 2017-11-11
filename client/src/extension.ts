@@ -1,41 +1,113 @@
-/* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for license information.
- * ------------------------------------------------------------------------------------------ */
-'use strict';
-
 import * as path from 'path';
+import { 
+	workspace as Workspace, window as Window, ExtensionContext, TextDocument, OutputChannel, WorkspaceFolder, Uri
+} from 'vscode'; 
 
-import { workspace, Disposable, ExtensionContext } from 'vscode';
-import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions, TransportKind } from 'vscode-languageclient';
+import { 
+	LanguageClient, LanguageClientOptions, TransportKind
+} from 'vscode-languageclient';
+
+let defaultClient: LanguageClient;
+let clients: Map<string, LanguageClient> = new Map();
+
+let _sortedWorkspaceFolders: string[];
+function sortedWorkspaceFolders(): string[] {
+	if (_sortedWorkspaceFolders === void 0) {
+		_sortedWorkspaceFolders = Workspace.workspaceFolders.map(folder => {
+			let result = folder.uri.toString();
+			if (result.charAt(result.length - 1) !== '/') {
+				result = result + '/';
+			}
+			return result;
+		}).sort(
+			(a, b) => {
+				return a.length - b.length;
+			}
+		);
+	}
+	return _sortedWorkspaceFolders;
+}
+Workspace.onDidChangeWorkspaceFolders(() => _sortedWorkspaceFolders = undefined);
+
+function getOuterMostWorkspaceFolder(folder: WorkspaceFolder): WorkspaceFolder {
+	let sorted = sortedWorkspaceFolders();
+	for (let element of sorted) {
+		let uri = folder.uri.toString();
+		if (uri.charAt(uri.length - 1) !== '/') {
+			uri = uri + '/';
+		}
+		if (uri.startsWith(element)) {
+			return Workspace.getWorkspaceFolder(Uri.parse(element));
+		}
+	}
+	return folder;
+}
 
 export function activate(context: ExtensionContext) {
 
-	// The server is implemented in node
-	let serverModule = context.asAbsolutePath(path.join('server', 'server.js'));
-	// The debug options for the server
-	let debugOptions = { execArgv: ["--nolazy", "--debug=6009"] };
+	let module = context.asAbsolutePath(path.join('server', 'server.js'));
+	let outputChannel: OutputChannel = Window.createOutputChannel('small-ci');
 	
-	// If the extension is launched in debug mode then the debug server options are used
-	// Otherwise the run options are used
-	let serverOptions: ServerOptions = {
-		run : { module: serverModule, transport: TransportKind.ipc },
-		debug: { module: serverModule, transport: TransportKind.ipc, options: debugOptions }
-	}
-	
-	// Options to control the language client
-	let clientOptions: LanguageClientOptions = {
-		documentSelector: ['php'],
-		synchronize: {
-			configurationSection: 'CI',
-			// Notify the server about file changes to '.clientrc files contain in the workspace
-			fileEvents: workspace.createFileSystemWatcher('**/.clientrc')
+	function didOpenTextDocument(document: TextDocument): void {
+		// We are only interested in language mode text
+		if (document.languageId !== 'php' || document.uri.scheme !== 'file') {
+			return;
+		}
+
+		let uri = document.uri;
+		let folder = Workspace.getWorkspaceFolder(uri);
+		// Files outside a folder can't be handled. This might depend on the language.
+		// Single file languages like JSON might handle files outside the workspace folders.
+		if (!folder) {
+			return;
+		}
+		// If we have nested workspace folders we only start a server on the outer most workspace folder.
+		folder = getOuterMostWorkspaceFolder(folder);
+		
+		if (!clients.has(folder.uri.toString())) {
+			let debugOptions = { execArgv: ["--nolazy", `--inspect=${6011 + clients.size}`] };
+			let serverOptions = {
+				run: { module, transport: TransportKind.ipc },
+				debug: { module, transport: TransportKind.ipc, options: debugOptions}
+			};
+			let clientOptions: LanguageClientOptions = {
+				documentSelector: ['php'],
+				synchronize: {
+					configurationSection: 'CI',
+					// Notify the server about file changes to '.clientrc files contain in the workspace
+					fileEvents: Workspace.createFileSystemWatcher('**/.clientrc')
+				},
+				diagnosticCollectionName: 'small-ci',
+				workspaceFolder: folder,
+				outputChannel: outputChannel
+			}
+			let client = new LanguageClient('small-ci', serverOptions, clientOptions);
+			client.registerProposedFeatures();
+			client.start();
+			clients.set(folder.uri.toString(), client);
 		}
 	}
-	
-	// Create the language client and start the client.
-	let disposable = new LanguageClient('small-ci', serverOptions, clientOptions).start();
-	// Push the disposable to the context's subscriptions so that the 
-	// client can be deactivated on extension deactivation
-	context.subscriptions.push(disposable);
+
+	Workspace.onDidOpenTextDocument(didOpenTextDocument);
+	Workspace.textDocuments.forEach(didOpenTextDocument);
+	Workspace.onDidChangeWorkspaceFolders((event) => {
+		for (let folder  of event.removed) {
+			let client = clients.get(folder.uri.toString());
+			if (client) {
+				clients.delete(folder.uri.toString());
+				client.stop();
+			}
+		}
+	});
+}
+
+export function deactivate(): Thenable<void> {
+	let promises: Thenable<void>[] = [];
+	if (defaultClient) {
+		promises.push(defaultClient.stop());
+	}
+	for (let client of clients.values()) {
+		promises.push(client.stop());
+	}
+	return Promise.all(promises).then(() => undefined);
 }

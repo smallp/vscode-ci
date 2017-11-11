@@ -1,28 +1,32 @@
 {
-	"name": "php-ci",
+  "name": "php-ci",
   "displayName": "PHP intellisense for codeigniter",
-	"description": "Code completion for PHP codeigniter framework",
-	"author": "Small",
-	"license": "MIT",
-	"version": "0.2.2",
-	"publisher":"small",
+  "description": "Code completion for PHP codeigniter framework",
+  "author": "Small",
+  "license": "MIT",
+  "version": "0.2.3",
+  "publisher": "small",
   "engines": {
-    "vscode": "^1.8.0"
+    "vscode": "^1.17.0"
   },
   "categories": [
     "Languages"
   ],
-  "keywords":["PHP","CI","codeigniter"],
-  "icon":"image/CI.png",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/smallp/vscode-ci.git"
-	},
-	"bugs": {
-		"url": "https://github.com/smallp/vscode-ci/issues"
-	},
+  "keywords": [
+    "PHP",
+    "CI",
+    "codeigniter"
+  ],
+  "icon": "image/CI.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/smallp/vscode-ci.git"
+  },
+  "bugs": {
+    "url": "https://github.com/smallp/vscode-ci/issues"
+  },
   "activationEvents": [
-		"workspaceContains:/system/"
+    "onLanguage:php"
   ],
   "main": "./out/src/extension",
   "contributes": {
@@ -41,26 +45,35 @@
             "system/core/Common.php"
           ],
           "description": "Path of files that need parse. That is just for addition const support."
+        },
+        "CI.system": {
+          "type": "string",
+          "default": "system",
+          "description": "Path of CI's system folder."
+        },
+        "CI.app": {
+          "type": "string",
+          "default": "application",
+          "description": "Path of CI's application folder."
         }
       }
     },
-    "commands":[{
-      "command":"extension.refreshModel",
-      "title": "CI:refresh Model"
-    }]
+    "commands": [
+      {
+        "command": "extension.refreshModel",
+        "title": "CI:refresh Model"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "tsc -p ./",
-    "compile": "tsc -watch -p ./",
+    "compile": "tsc -p ./",
+    "watch": "tsc -w -p ./",
     "update-vscode": "node ./node_modules/vscode/bin/install",
     "postinstall": "node ./node_modules/vscode/bin/install"
   },
-  "devDependencies": {
-    "@types/node": "^6.0.52",
-    "typescript": "^2.1.5",
-    "vscode": "^1.0.3"
-  },
   "dependencies": {
-    "vscode-languageclient": "^3.0.3"
+    "vscode": "^1.1.5",
+    "vscode-languageclient": "^3.4.2"
   }
 }
