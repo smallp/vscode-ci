@@ -28,7 +28,7 @@ documents.listen(connection);
 // After the server has started the client sends an initilize request. The server receives
 // in the passed params the rootPath of the workspace plus the client capabilites. 
 connection.onInitialize((params): InitializeResult => {
-	mLoader.initModels(params.rootUri);
+	loader.loader.root=params.rootUri.substring(7);
 	return {
 		capabilities: {
 			// Tell the client that the server works in FULL text document sync mode
@@ -72,6 +72,7 @@ connection.onDidChangeConfiguration((change) => {
 	}
 	loader.loader.system=settings.CI.system;
 	loader.loader.app=settings.CI.app;
+	mLoader.initModels();
 });
 
 documents.onDidOpen((e)=>{
@@ -92,7 +93,7 @@ documents.onDidSave((e)=>{
 	}
 });
 connection.onExecuteCommand((param:ExecuteCommandParams)=>{
-	mLoader.initModels(null);
+	mLoader.initModels();
 })
 // This handler provides the initial list of the completion items.
 connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
@@ -105,7 +106,6 @@ connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): Comp
 // This handler resolve additional information for the item selected in
 // the completion list.
 connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
-	console.log(item);
 	if (item.kind==CompletionItemKind.Class){
 		item.insertText=item.label+'-';
 	}else if (item.kind==CompletionItemKind.Method){

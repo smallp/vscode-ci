@@ -1,4 +1,5 @@
 import * as path from 'path';
+import * as fs from 'fs';
 import { 
 	workspace as Workspace, window as Window, ExtensionContext, TextDocument, OutputChannel, WorkspaceFolder, Uri
 } from 'vscode'; 
@@ -63,6 +64,10 @@ export function activate(context: ExtensionContext) {
 		}
 		// If we have nested workspace folders we only start a server on the outer most workspace folder.
 		folder = getOuterMostWorkspaceFolder(folder);
+		const system = Workspace.getConfiguration().get('CI.system');
+		if (!fs.existsSync(`${folder.uri.path}/${system}`)){
+			return;
+		}
 		
 		if (!clients.has(folder.uri.toString())) {
 			let debugOptions = { execArgv: ["--nolazy", `--inspect=${6011 + clients.size}`] };
@@ -85,6 +90,7 @@ export function activate(context: ExtensionContext) {
 			client.registerProposedFeatures();
 			client.start();
 			clients.set(folder.uri.toString(), client);
+			console.log('start small-ci');
 		}
 	}
 

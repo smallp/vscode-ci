@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.2.5 (2017/11/12)
+* Fix bug: extension crashed.
+* Do not load this extension if no system folder.
+* Show more info in methods of model.
+
 ## 0.2.3 (2017/11/11)
 * add support for Multi-root workspaces
 * be able to set system and application folders.

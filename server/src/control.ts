@@ -133,12 +133,12 @@ export class loader {
             l = this.cache.system.keys();
             for (t of l) {
                 if (t != 'CI_DB_result')
-                    res.push({ label: t, kind: CompletionItemKind.Class, detail: 'system class', data: textDocumentPosition });
+                    res.push({ label: t, kind: CompletionItemKind.Class, detail: 'system class'});
             }
             for (var [name, type] of this.display) {
                 res.push({
-                    label: name, kind: CompletionItemKind.Class, data: textDocumentPosition,
-                    detail: type + '!' + (this.alias.has(name) ? this.alias.get(name) : name)
+                    label: name, kind: CompletionItemKind.Class,
+                    detail: type + ' ' + (this.alias.has(name) ? this.alias.get(name) : name)
                 });
             }
             l = parse.parse.functions(text);
@@ -146,13 +146,13 @@ export class loader {
             for (item of l) {
                 if (!item.name.startsWith('__'))
                     res.push({
-                        label: item.name, kind: CompletionItemKind.Method, data: textDocumentPosition,
+                        label: item.name, kind: CompletionItemKind.Method,
                         detail: 'method ' + item.name
                     });
             }
         } else {
             token = this.alias.has(token) ? this.alias.get(token) : token;
-            var funs, kind;
+            var funs:Map<string,fun>=null, kind;
             for (kind in this.cache) {
                 if (this.cache[kind].has(token)) {
                     funs = this.cache[kind].get(token);
@@ -162,19 +162,15 @@ export class loader {
                         } catch (error) {
                             return res;
                         }
-                    } else funs = funs.funs.keys();
+                    }
                     break;
                 }
             }
-            if (typeof funs == 'undefined') return res;
-            else {
-                let t: string;
-                for (t of funs) {
-                    res.push({
-                        label: t, kind: CompletionItemKind.Method, detail: `${kind} ${token}`
-                    });
-                }
-            }
+            funs&&funs.forEach((v,k)=>{
+                res.push({
+                    label: k, kind: CompletionItemKind.Method, detail: `${kind} ${token}`,documentation:v.document
+                });
+            })
         }
         return res;
     }
@@ -286,34 +282,31 @@ export class loader {
         return { contents: data.document };
     }
 
-    initModels(root: string): void {
-        if (root != null) {
-            loader.root = root.substring(7);
-        }
+    initModels(): void {
         let path = `${loader.root}/${loader.app}/models/`;
         this.cache.model = new Map<string, cache>();
         this._initModels(path, '');
     }
 
     _initModels(root: string, dir: string) {
-        let that = this;
         let path = root + dir;
-        fs.readdir(path, function (err, files) {
-            if (err) return;
+        fs.readdir(path, (err, files)=>{
+            if (err){
+                console.log('read dir fail:'+path);
+                return;
+            }
             for (let file of files) {
                 if (file.endsWith('.php')) {
                     file = dir + file.slice(0, -4);
-                    that.cache.model.set(file, null);
+                    this.cache.model.set(file, null);
                     if (dir == '') {
                         //add to display if it is in root folder
                         var name = parse.parse.modFirst(file, false);
-                        that.display.set(name, 'model');
-                        if (name != file) that.alias.set(name, file);
+                        this.display.set(name, 'model');
+                        if (name != file) this.alias.set(name, file);
                     }
-                    // file = that._setAlise(file);
-                    // that.cache.model.set(file, null);
                 } else if (!file.endsWith('html')) {
-                    that._initModels(root, dir + file + '/');
+                    this._initModels(root, dir + file + '/');
                 }
             }
         });
@@ -378,7 +371,7 @@ export class loader {
     loadOther(str: string) {
         let path = loader.root + '/' + str;
         let content = fs.readFileSync(path, { encoding: 'utf-8' });
-        this.parseConst(content, parse.parse.path2uri(path));
+        content&&this.parseConst(content, parse.parse.path2uri(path));
     }
 
     parseConst(content: string, path: string) {
@@ -396,7 +389,7 @@ export class loader {
     }
 
     //parse file to collect info
-    parseFile(name: string, kind: string): string[] {
+    parseFile(name: string, kind: string): Map<string,fun> {
         let path = loader.root;
         if (this.alias.has(name)) name = this.alias.get(name);
         let dir = name.split('/');
@@ -437,7 +430,7 @@ export class loader {
                     });
                     //for method chaining
                     this.alias.set('CI_DB_query_builder', 'db');
-                    return Array.from(db.keys());
+                    return db;
                 } else if (name == 'load') {
                     path += `/${loader.system}/core/Loader.php`;
                 } else path += `/${loader.system}/core/${filePath}`;
@@ -454,7 +447,7 @@ export class loader {
                 }
                 break;
             default:
-                return [];
+                return new Map;
         }
         let data = parse.parse.parseFile(path);
         data.consts.forEach((v, k) => {
@@ -468,7 +461,7 @@ export class loader {
             ori.kind = kind; ori.name = name;
             this.cached_info.set(path, ori);
         } else this.cached_info.set(path, { kind: kind, claName: name });
-        return Array.from(data.funs.keys());
+        return data.funs;
     }
 
     getClassInfo(claName: string): class_cache {
