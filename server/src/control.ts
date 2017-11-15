@@ -5,6 +5,7 @@ import {
 } from 'vscode-languageserver';
 import * as fs from 'fs';
 import * as parse from './parse';
+import URI from 'vscode-uri/lib';
 export interface fun {
     param: ParameterInformation[];
     location: Location;
@@ -48,7 +49,7 @@ export interface api_parse {
 }
 export class loader {
     //root of the workspace
-    static root: string = '';
+    static root: URI = null;
     static system: string = '';
     static app: string = '';
     static re = {
@@ -155,14 +156,14 @@ export class loader {
             var funs:Map<string,fun>=null, kind;
             for (kind in this.cache) {
                 if (this.cache[kind].has(token)) {
-                    funs = this.cache[kind].get(token);
-                    if (funs === null) {
+                    var t = this.cache[kind].get(token);
+                    if (t === null) {
                         try {
                             funs = this.parseFile(token, kind);
                         } catch (error) {
                             return res;
                         }
-                    }
+                    }else funs=t.funs;
                     break;
                 }
             }
@@ -283,7 +284,7 @@ export class loader {
     }
 
     initModels(): void {
-        let path = `${loader.root}/${loader.app}/models/`;
+        let path = `${loader.root.fsPath}/${loader.app}/models/`;
         this.cache.model = new Map<string, cache>();
         this._initModels(path, '');
     }
@@ -369,7 +370,7 @@ export class loader {
 
     //load file in setting-other
     loadOther(str: string) {
-        let path = loader.root + '/' + str;
+        let path = loader.root.fsPath + '/' + str;
         let content = fs.readFileSync(path, { encoding: 'utf-8' });
         content&&this.parseConst(content, parse.parse.path2uri(path));
     }
@@ -390,7 +391,7 @@ export class loader {
 
     //parse file to collect info
     parseFile(name: string, kind: string): Map<string,fun> {
-        let path = loader.root;
+        let path = loader.root.fsPath;
         if (this.alias.has(name)) name = this.alias.get(name);
         let dir = name.split('/');
         let fileName = dir.pop();

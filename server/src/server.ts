@@ -14,6 +14,7 @@ import {
 	CompletionList
 } from 'vscode-languageserver';
 import * as loader from './control';
+import * as URI from 'vscode-uri';
 let mLoader=new loader.loader();
 // Create a connection for the server. The connection uses Node's IPC as a transport
 let connection: IConnection = createConnection(new IPCMessageReader(process), new IPCMessageWriter(process));
@@ -28,7 +29,8 @@ documents.listen(connection);
 // After the server has started the client sends an initilize request. The server receives
 // in the passed params the rootPath of the workspace plus the client capabilites. 
 connection.onInitialize((params): InitializeResult => {
-	loader.loader.root=params.rootUri.substring(7);
+	loader.loader.root=URI.default.parse(params.rootUri);
+	console.log('start small-ci');
 	return {
 		capabilities: {
 			// Tell the client that the server works in FULL text document sync mode
@@ -97,7 +99,7 @@ connection.onExecuteCommand((param:ExecuteCommandParams)=>{
 })
 // This handler provides the initial list of the completion items.
 connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
-	if (textDocumentPosition.textDocument.uri.indexOf(loader.loader.root)<0) return [];
+	if (textDocumentPosition.textDocument.uri.indexOf(loader.loader.root.path)<0) return [];
 	else return mLoader.complete(
 		textDocumentPosition,
 		documents.get(textDocumentPosition.textDocument.uri).getText());
@@ -116,26 +118,26 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
 });
 
 connection.onDocumentSymbol((param:DocumentSymbolParams):SymbolInformation[]=> {
-	if (param.textDocument.uri.indexOf(loader.loader.root)<0) return [];
+	if (param.textDocument.uri.indexOf(loader.loader.root.path)<0) return [];
 	else return mLoader.allFun(documents.get(param.textDocument.uri));
 });
 
 connection.onSignatureHelp((position:TextDocumentPositionParams):SignatureHelp=>{
-	if (position.textDocument.uri.indexOf(loader.loader.root)<0) return null;
+	if (position.textDocument.uri.indexOf(loader.loader.root.path)<0) return null;
 	else return mLoader.signature(
 		position,
 		documents.get(position.textDocument.uri).getText());
 });
 
 connection.onDefinition((position:TextDocumentPositionParams):Location=>{
-	if (position.textDocument.uri.indexOf(loader.loader.root)<0) return null;
+	if (position.textDocument.uri.indexOf(loader.loader.root.path)<0) return null;
 	else return mLoader.definition(
 		position,
 		documents.get(position.textDocument.uri).getText());
 });
 
 connection.onHover((position:TextDocumentPositionParams):Hover=>{
-	if (position.textDocument.uri.indexOf(loader.loader.root)<0) return null;
+	if (position.textDocument.uri.indexOf(loader.loader.root.path)<0) return null;
 	else return mLoader.hover(
 		position,
 		documents.get(position.textDocument.uri).getText());

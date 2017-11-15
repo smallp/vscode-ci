@@ -1,6 +1,6 @@
 # PHP intellisense for codeigniter
 
-This extension is developed for codeigniter framework, and it is still under development. Its source is in [GitHub](https://github.com/smallp/vscode-info-collector).
+This extension is developed for codeigniter framework, and it is still under development. Its source is in [GitHub](https://github.com/smallp/vscode-ci).
 
 When there is `system` folder in you workspace, the extension will start and parse the files in your model folder.
 
@@ -8,7 +8,7 @@ If you find any bug or suggestion, please add a issue [here](https://github.com/
 
 **Attention**: All the features is based on **RegExp**, so it is limited in some situation.
 
-## features
+## Features
 
 ### code completion
 

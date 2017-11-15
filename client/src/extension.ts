@@ -4,7 +4,7 @@ import {
 	workspace as Workspace, window as Window, ExtensionContext, TextDocument, OutputChannel, WorkspaceFolder, Uri
 } from 'vscode'; 
 
-import { 
+import {
 	LanguageClient, LanguageClientOptions, TransportKind
 } from 'vscode-languageclient';
 
@@ -65,7 +65,9 @@ export function activate(context: ExtensionContext) {
 		// If we have nested workspace folders we only start a server on the outer most workspace folder.
 		folder = getOuterMostWorkspaceFolder(folder);
 		const system = Workspace.getConfiguration().get('CI.system');
-		if (!fs.existsSync(`${folder.uri.path}/${system}`)){
+		try {
+			fs.accessSync(`${folder.uri.fsPath}/${system}`)
+		} catch (error) {
 			return;
 		}
 		
@@ -90,7 +92,6 @@ export function activate(context: ExtensionContext) {
 			client.registerProposedFeatures();
 			client.start();
 			clients.set(folder.uri.toString(), client);
-			console.log('start small-ci');
 		}
 	}
 

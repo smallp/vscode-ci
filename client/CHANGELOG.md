@@ -1,5 +1,8 @@
 # Change Log
 
+## 0.2.7 (2017/11/15)
+* Fix bug: change way get path to adapt windows.
+
 ## 0.2.5 (2017/11/12)
 * Fix bug: extension crashed.
 * Do not load this extension if no system folder.
