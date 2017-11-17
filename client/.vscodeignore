@@ -1,2 +1,4 @@
 yarn.lock
 *.map
+src/*
+tsconfig.json

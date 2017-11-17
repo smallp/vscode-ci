@@ -1,4 +1,6 @@
 # Change Log
+## 0.2.8 (2017/11/17)
+* Fix bug: Work fine in windows.
 
 ## 0.2.7 (2017/11/15)
 * Fix bug: change way get path to adapt windows.

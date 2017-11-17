@@ -99,7 +99,7 @@ connection.onExecuteCommand((param:ExecuteCommandParams)=>{
 })
 // This handler provides the initial list of the completion items.
 connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
-	if (textDocumentPosition.textDocument.uri.indexOf(loader.loader.root.path)<0) return [];
+	if (textDocumentPosition.textDocument.uri.indexOf(loader.loader.root.toString())<0) return [];
 	else return mLoader.complete(
 		textDocumentPosition,
 		documents.get(textDocumentPosition.textDocument.uri).getText());
@@ -118,26 +118,26 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
 });
 
 connection.onDocumentSymbol((param:DocumentSymbolParams):SymbolInformation[]=> {
-	if (param.textDocument.uri.indexOf(loader.loader.root.path)<0) return [];
+	if (param.textDocument.uri.indexOf(loader.loader.root.toString())<0) return [];
 	else return mLoader.allFun(documents.get(param.textDocument.uri));
 });
 
 connection.onSignatureHelp((position:TextDocumentPositionParams):SignatureHelp=>{
-	if (position.textDocument.uri.indexOf(loader.loader.root.path)<0) return null;
+	if (position.textDocument.uri.indexOf(loader.loader.root.toString())<0) return null;
 	else return mLoader.signature(
 		position,
 		documents.get(position.textDocument.uri).getText());
 });
 
 connection.onDefinition((position:TextDocumentPositionParams):Location=>{
-	if (position.textDocument.uri.indexOf(loader.loader.root.path)<0) return null;
+	if (position.textDocument.uri.indexOf(loader.loader.root.toString())<0) return null;
 	else return mLoader.definition(
 		position,
 		documents.get(position.textDocument.uri).getText());
 });
 
 connection.onHover((position:TextDocumentPositionParams):Hover=>{
-	if (position.textDocument.uri.indexOf(loader.loader.root.path)<0) return null;
+	if (position.textDocument.uri.indexOf(loader.loader.root.toString())<0) return null;
 	else return mLoader.hover(
 		position,
 		documents.get(position.textDocument.uri).getText());
