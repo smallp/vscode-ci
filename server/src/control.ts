@@ -5,7 +5,7 @@ import {
 } from 'vscode-languageserver';
 import * as fs from 'fs';
 import * as parse from './parse';
-import URI from 'vscode-uri/lib';
+import URI from 'vscode-uri';
 export interface fun {
     param: ParameterInformation[];
     location: Location;
@@ -34,8 +34,10 @@ export interface const_data {
     document: string
 }
 export interface cache_info {
+    //filename
     name?: string;
     kind: string;
+    //class name
     claName?: string;
 }
 export interface cache {
@@ -152,7 +154,11 @@ export class loader {
                     });
             }
         } else {
-            token = this.alias.has(token) ? this.alias.get(token) : token;
+            if (this.alias.has(token)){
+                token=this.alias.get(token)
+            }else{
+                token=this.cache.system.has(token)?token: parse.parse.modFirst(token)
+            }
             var funs:Map<string,fun>=null, kind;
             for (kind in this.cache) {
                 if (this.cache[kind].has(token)) {
@@ -304,7 +310,6 @@ export class loader {
                         //add to display if it is in root folder
                         var name = parse.parse.modFirst(file, false);
                         this.display.set(name, 'model');
-                        if (name != file) this.alias.set(name, file);
                     }
                 } else if (!file.endsWith('html')) {
                     this._initModels(root, dir + file + '/');
@@ -320,6 +325,7 @@ export class loader {
             if (match[1] == 'model' || match[1] == 'library') {
                 var a: Array<string> = match[2].split(',');
                 let name: string = a[0].trim().slice(1, -1);
+                name=parse.parse.realPath(name)
                 let alias: string;
                 if (a.length == 1 && this.cache[match[1]].has(name)) continue;//no alias, has loaded
                 if (match[1] == 'model') {
@@ -345,7 +351,6 @@ export class loader {
                     }
                 }
                 this.display.set(alias, match[1]);
-                if (this.alias.has(alias)) name = this.alias.get(alias);
                 if (!this.cache[match[1]].get(name)) {
                     this.parseFile(name, match[1]);
                 }
@@ -353,17 +358,22 @@ export class loader {
         }
     }
 
+    /**
+     * deal alias or subfloder for CI_Load class
+     * @param name filename
+     * @param alias alise of class
+     */
     _setAlise(name: string, alias: string = name): string {
         if (name.indexOf('/') >= 0) {
             //model is in a directory. alias the name
             var arr = name.split('/');
             var fileName = arr.pop();
-            alias = alias == name ? fileName : alias;
-            name = arr.join('/') + '/' + parse.parse.modFirst(fileName);
-            this.alias.set(alias, name);
+            alias = alias == name ? parse.parse.modFirst(fileName,false) : alias;
+            this.alias.set(alias, parse.parse.realPath(name));
         } else {
-            name = parse.parse.modFirst(name);
+            //no alias, pass
             if (alias != name) this.alias.set(alias, name);
+            else alias=parse.parse.modFirst(alias,false)
         }
         return alias;
     }
@@ -393,11 +403,7 @@ export class loader {
     parseFile(name: string, kind: string): Map<string,fun> {
         let path = loader.root.fsPath;
         if (this.alias.has(name)) name = this.alias.get(name);
-        let dir = name.split('/');
-        let fileName = dir.pop();
-        fileName = fileName[0].toUpperCase() + fileName.substring(1);
-        dir.push(fileName);
-        let filePath = dir.join('/') + '.php';
+        let filePath =parse.parse.realPath(name) + '.php';
         switch (kind) {
             case 'system':
                 if (name == 'db') {
@@ -461,12 +467,15 @@ export class loader {
             var ori = this.cached_info.get(path);
             ori.kind = kind; ori.name = name;
             this.cached_info.set(path, ori);
-        } else this.cached_info.set(path, { kind: kind, claName: name });
+        } else this.cached_info.set(path, { kind: kind, claName: data.classData.name,name:name });
         return data.funs;
     }
 
     getClassInfo(claName: string): class_cache {
         if (this.alias.has(claName)) claName = this.alias.get(claName);
+        else{
+            claName=parse.parse.modFirst(claName)
+        }
         for (var kind in this.cache) {
             if (this.cache[kind].has(claName)) {
                 var claData = this.cache[kind].get(claName);

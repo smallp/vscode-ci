@@ -48,7 +48,7 @@ export function activate(context: ExtensionContext) {
 
 	let module = context.asAbsolutePath(path.join('server', 'server.js'));
 	let outputChannel: OutputChannel = Window.createOutputChannel('small-ci');
-	
+
 	function didOpenTextDocument(document: TextDocument): void {
 		// We are only interested in language mode text
 		if (document.languageId !== 'php' || document.uri.scheme !== 'file') {
@@ -78,7 +78,7 @@ export function activate(context: ExtensionContext) {
 				debug: { module, transport: TransportKind.ipc, options: debugOptions}
 			};
 			let clientOptions: LanguageClientOptions = {
-				documentSelector: ['php'],
+				documentSelector: [{language: 'php'}],
 				synchronize: {
 					configurationSection: 'CI',
 					// Notify the server about file changes to '.clientrc files contain in the workspace

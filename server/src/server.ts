@@ -5,7 +5,7 @@
 'use strict';
 
 import {
-	IPCMessageReader, IPCMessageWriter,
+	ProposedFeatures,
 	createConnection, IConnection, TextDocumentSyncKind,
 	TextDocuments, InitializeResult, TextDocumentPositionParams,
 	CompletionItem, CompletionItemKind, InsertTextFormat,
@@ -15,9 +15,11 @@ import {
 } from 'vscode-languageserver';
 import * as loader from './control';
 import * as URI from 'vscode-uri';
+import { parse } from './parse';
+import { isNumber } from 'util';
 let mLoader=new loader.loader();
 // Create a connection for the server. The connection uses Node's IPC as a transport
-let connection: IConnection = createConnection(new IPCMessageReader(process), new IPCMessageWriter(process));
+let connection = createConnection(ProposedFeatures.all);
 
 // Create a simple text document manager. The text document manager
 // supports full document sync only
@@ -30,7 +32,7 @@ documents.listen(connection);
 // in the passed params the rootPath of the workspace plus the client capabilites. 
 connection.onInitialize((params): InitializeResult => {
 	loader.loader.root=URI.default.parse(params.rootUri);
-	console.log('start small-ci');
+	console.log(`start small-ci on ${process.pid}`);
 	return {
 		capabilities: {
 			// Tell the client that the server works in FULL text document sync mode
@@ -57,7 +59,8 @@ interface Settings {
 }
 
 interface CI {
-	model: Array<string>;
+	library: Array<string> | object;
+	model: Array<string> | object;
 	other: Array<string>;
 	system:string;
 	app:string;
@@ -65,15 +68,44 @@ interface CI {
 
 connection.onDidChangeConfiguration((change) => {
 	let settings = <Settings>change.settings;
-	var str:string;
-	for (str of settings.CI.model){
-		mLoader.parseFile(str,'model');
-	}
-	for (str of settings.CI.other) {
-		mLoader.loadOther(str);
-	}
+	var path:string,
+	index:string;
 	loader.loader.system=settings.CI.system;
 	loader.loader.app=settings.CI.app;
+	for (index in settings.CI.library){
+		path=settings.CI.library[index]
+		path=parse.realPath(path)
+		mLoader.parseFile(path,'library');
+		if (!isNumber(index)){//alise by user
+			mLoader.alias.set(index,path)
+			mLoader.display.set(index,'library')
+		}else if (path.indexOf('/')>0){
+			//in sub folder, we need add alisa
+			var filename=path.split('/').pop()
+			filename=parse.modFirst(filename,false)
+			mLoader.alias.set(filename,path)
+			mLoader.display.set(filename,'library')
+		}else{
+			mLoader.display.set(parse.modFirst(path,false),'library')
+		}
+	}
+	for (path of settings.CI.other) {
+		mLoader.loadOther(path);
+	}
+	for (index in settings.CI.model){
+		path=settings.CI.model[index]
+		mLoader.parseFile(path,'model');
+		if (!isNumber(index)){//alise by user
+			mLoader.alias.set(index,parse.realPath(path))
+			mLoader.display.set(index,'model')
+		}else if (path.indexOf('/')>0){
+			//in sub folder, we need add alisa
+			var filename=path.split('/').pop()
+			filename=parse.modFirst(filename,false)
+			mLoader.alias.set(filename,parse.realPath(path))
+			mLoader.display.set(filename,'model')
+		}//in root folder, mLoader.initModels will do it
+	}
 	mLoader.initModels();
 });
 

@@ -4,10 +4,10 @@
     "description": "Code completion for PHP codeigniter framework",
     "author": "Small",
     "license": "MIT",
-    "version": "0.2.8",
+    "version": "0.2.9",
     "publisher": "small",
     "engines": {
-        "vscode": "^1.17.0"
+        "vscode": "^1.20.0"
     },
     "categories": [
         "Languages"
@@ -35,9 +35,14 @@
             "title": "CI autoload",
             "properties": {
                 "CI.model": {
-                    "type": "array",
+                    "type": ["array","object"],
                     "default": [],
-                    "description": "Auto load models. Eg: user/account"
+                    "description": "Auto load models. Eg: ['user/account'] or {'account':'user'} for alisa"
+                },
+                "CI.library": {
+                    "type": ["array","object"],
+                    "default": [],
+                    "description": "Auto load library. Eg: ['user/account'] or {'account':'user'} for alisa"
                 },
                 "CI.other": {
                     "type": "array",
@@ -74,6 +79,6 @@
     },
     "dependencies": {
         "vscode": "^1.1.5",
-        "vscode-languageclient": "^3.4.2"
+        "vscode-languageclient": "^3.5.0"
     }
 }

@@ -1,4 +1,8 @@
 # Change Log
+## 0.2.9 (2018/03/09)
+* Add config of library. [#11](https://github.com/smallp/vscode-ci/issues/11)
+* Enable alias in config. [#14](https://github.com/smallp/vscode-ci/issues/14)
+
 ## 0.2.8 (2017/11/17)
 * Fix bug: Work fine in windows.
 

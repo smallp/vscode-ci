@@ -354,6 +354,11 @@ export class parse{
         return {param:total,complete:stack.length==0?completeType.complete:completeType.less};
     }
 
+    /**
+     * change the firse letter
+     * @param s The string
+     * @param up toUpperCase or toLowerCase
+     */
     static modFirst(s:string,up=true):string{
         return (up?s[0].toUpperCase():s[0].toLowerCase())+s.substr(1);
     }
@@ -362,5 +367,12 @@ export class parse{
         if (path[0] !== '/') path = '/' + encodeURI(path.replace(/\\/g, '/')).replace(':', '%3A');
         else path=encodeURI(path);
         return `file://${path}`;
+    }
+
+    static realPath(path:string):string{
+        let arr=path.split('/')
+        let name=arr.pop()
+        name=parse.modFirst(name)
+        return arr.length==0? name: arr.join('/')+'/'+name;
     }
 }

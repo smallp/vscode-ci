@@ -16,7 +16,7 @@ It can provide code completion for all models and some system classes (include d
 
 1. When you hint `$this->`, it will display `db`,`input` and the name of other classes.
 2. When you select the class, it will insert the class with '-'. So while you type '>' it will display all the methods of the class.
-3. It supports method chaining only for **db** class.
+3. It supports method chaining **only for** `db` class.
 4. When you hint `className::`, it will display const and static variables.
 5. If you add or delete a model file, you now can use command 'refresh Model' to refresh the model folders.
 
@@ -36,7 +36,7 @@ You can hover to get a method's documents.
 
 ## Known issues
 * If there are classes in one file, it may not work well. However, that is a rare situation. So there is no plan to fix it.
-* There is no `library` in setting because as you open a file including `$this->load->library`, the file would be parsed. Add a issue if you believe that is nesessary.
+* If there is a library that has the same name with a model, the library will be ignored as it is a litter troublesome to diff them.
 
 ## Author's words
 From now, the extension's all feature has been all done. In the rest of the time, I will only fix bugs for it. Thanks for using.
