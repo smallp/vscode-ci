@@ -65,16 +65,15 @@ interface CI {
 	system:string;
 	app:string;
 }
-
+let settings:Settings=null;
 connection.onDidChangeConfiguration((change) => {
-	let settings = <Settings>change.settings;
+	settings = <Settings>change.settings;
 	var path:string,
 	index:string;
 	loader.loader.system=settings.CI.system;
 	loader.loader.app=settings.CI.app;
 	for (index in settings.CI.library){
 		path=settings.CI.library[index]
-		path=parse.realPath(path)
 		mLoader.parseFile(path,'library');
 		if (!isNumber(index)){//alise by user
 			mLoader.alias.set(index,path)
@@ -92,21 +91,7 @@ connection.onDidChangeConfiguration((change) => {
 	for (path of settings.CI.other) {
 		mLoader.loadOther(path);
 	}
-	for (index in settings.CI.model){
-		path=settings.CI.model[index]
-		mLoader.parseFile(path,'model');
-		if (!isNumber(index)){//alise by user
-			mLoader.alias.set(index,parse.realPath(path))
-			mLoader.display.set(index,'model')
-		}else if (path.indexOf('/')>0){
-			//in sub folder, we need add alisa
-			var filename=path.split('/').pop()
-			filename=parse.modFirst(filename,false)
-			mLoader.alias.set(filename,parse.realPath(path))
-			mLoader.display.set(filename,'model')
-		}//in root folder, mLoader.initModels will do it
-	}
-	mLoader.initModels();
+	mLoader.initModels(settings.CI.model);
 });
 
 documents.onDidOpen((e)=>{
@@ -127,7 +112,7 @@ documents.onDidSave((e)=>{
 	}
 });
 connection.onExecuteCommand((param:ExecuteCommandParams)=>{
-	mLoader.initModels();
+	mLoader.initModels(settings==null?[]:settings.CI.model);
 })
 // This handler provides the initial list of the completion items.
 connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {

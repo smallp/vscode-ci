@@ -4,7 +4,7 @@
     "description": "Code completion for PHP codeigniter framework",
     "author": "Small",
     "license": "MIT",
-    "version": "0.2.9",
+    "version": "0.2.10",
     "publisher": "small",
     "engines": {
         "vscode": "^1.20.0"
@@ -35,14 +35,20 @@
             "title": "CI autoload",
             "properties": {
                 "CI.model": {
-                    "type": ["array","object"],
+                    "type": [
+                        "array",
+                        "object"
+                    ],
                     "default": [],
-                    "description": "Auto load models. Eg: ['user/account'] or {'account':'user'} for alisa"
+                    "description": "Auto load models. Eg: ['user/account'] or {'whatilike':'Ori_model'} for alisa"
                 },
                 "CI.library": {
-                    "type": ["array","object"],
+                    "type": [
+                        "array",
+                        "object"
+                    ],
                     "default": [],
-                    "description": "Auto load library. Eg: ['user/account'] or {'account':'user'} for alisa"
+                    "description": "Auto load library. Eg: ['user','foo/account'] or {'whatilike':'Ori_library'} for alisa"
                 },
                 "CI.other": {
                     "type": "array",

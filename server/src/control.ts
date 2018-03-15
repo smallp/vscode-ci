@@ -6,6 +6,7 @@ import {
 import * as fs from 'fs';
 import * as parse from './parse';
 import URI from 'vscode-uri';
+import { isNumber } from 'util';
 export interface fun {
     param: ParameterInformation[];
     location: Location;
@@ -191,6 +192,7 @@ export class loader {
         if (t.complete == parse.completeType.over) return null;
         else params = t.param;
         arr = words.split('->');
+        if (arr.length<3) return null;
         let claName = arr[1];
         claName = this.alias.has(claName) ? this.alias.get(claName) : claName;
         let method = arr.pop();
@@ -289,10 +291,25 @@ export class loader {
         return { contents: data.document };
     }
 
-    initModels(): void {
+    initModels(setting=null): void {
         let path = `${loader.root.fsPath}/${loader.app}/models/`;
         this.cache.model = new Map<string, cache>();
         this._initModels(path, '');
+        let index:string;
+        for (index in setting){
+            path=setting[index]
+            this.parseFile(path,'model');
+            if (!isNumber(index)){//alise by user
+                this.alias.set(index,path)
+                this.display.set(index,'model')
+            }else if (path.indexOf('/')>0){
+                //in sub folder, we need add alisa
+                var filename=path.split('/').pop()
+                filename=parse.parse.modFirst(filename,false)
+                this.alias.set(filename,path)
+                this.display.set(filename,'model')
+            }//in root folder, _initModels will do it
+        }
     }
 
     _initModels(root: string, dir: string) {
@@ -473,7 +490,7 @@ export class loader {
 
     getClassInfo(claName: string): class_cache {
         if (this.alias.has(claName)) claName = this.alias.get(claName);
-        else{
+        else if (!this.cache.system.has(claName)){
             claName=parse.parse.modFirst(claName)
         }
         for (var kind in this.cache) {

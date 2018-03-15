@@ -1,4 +1,8 @@
 # Change Log
+## 0.2.10 (2018/03/15)
+* Fix bug: No more errors. [#15](https://github.com/smallp/vscode-ci/issues/15)
+* Keep the setting of model when you refresh the models.
+
 ## 0.2.9 (2018/03/09)
 * Add config of library. [#11](https://github.com/smallp/vscode-ci/issues/11)
 * Enable alias in config. [#14](https://github.com/smallp/vscode-ci/issues/14)
