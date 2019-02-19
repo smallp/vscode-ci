@@ -23,8 +23,8 @@ export class parse{
         method:/->[a-zA-Z0-9_]*$/,
         endOfWords:/\)\s*[=|!|\|\||&&|<|>]/,
         completeWord:/^[a-zA-Z0-9_]*(\()?/,
-        const: /const ([a-zA-Z0-9_]*)=(.*);/ig,
-        static: /static \$([a-zA-Z0-9_]*)=(.*);/ig,
+        const: /const ([a-zA-Z0-9_ ]*)=(.*);/ig,
+        static: /static \$([a-zA-Z0-9_ ]*)=(.*);/ig,
         class: /class (.*?)\s*{/ig
     };
 
@@ -190,10 +190,10 @@ export class parse{
                         end: { line: suffLine +line, character: suffLength + str.length }
                     }
                 },
-                value: match[2],
+                value: match[2].trim(),
                 document: str == match[0] ? null : str.substr(match[0].length + 2)
             }
-            con.set(match[1], item);
+            con.set(match[1].trim(), item);
         }
         while ((match = this.re.static.exec(content)) != null) {
             var lines = content.substr(0, match.index).split('\n');
@@ -208,10 +208,10 @@ export class parse{
                         end: { line: suffLine + line, character: suffLength + str.length }
                     }
                 },
-                value: match[2],
+                value: match[2].trim(),
                 document: str == match[0] ? null : str.substr(match[0].length + 2)
             }
-            con.set('$' + match[1], item);
+            con.set('$' + match[1].trim(), item);
         }
         return con;
     }

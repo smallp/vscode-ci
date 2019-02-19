@@ -63,7 +63,9 @@ interface CI {
 	model: Array<string> | object;
 	other: Array<string>;
 	system:string;
-	app:string;
+	app: string;
+	ignoreSymbols: boolean;
+	capitalize: boolean;
 }
 let settings:Settings=null;
 connection.onDidChangeConfiguration((change) => {
@@ -135,7 +137,7 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
 });
 
 connection.onDocumentSymbol((param:DocumentSymbolParams):SymbolInformation[]=> {
-	if (param.textDocument.uri.indexOf(loader.loader.root.toString())<0) return [];
+	if (param.textDocument.uri.indexOf(loader.loader.root.toString())<0 || settings.CI.ignoreSymbols) return [];
 	else return mLoader.allFun(documents.get(param.textDocument.uri));
 });
 

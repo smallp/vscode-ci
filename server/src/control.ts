@@ -132,7 +132,7 @@ export class loader {
             } else return res;//now we only search db for method chaining
         }
         if (token.endsWith('$this')) {
-            let l;
+            let l: any;
             let t: string;
             l = this.cache.system.keys();
             for (t of l) {
@@ -474,6 +474,10 @@ export class loader {
                 return new Map;
         }
         let data = parse.parse.parseFile(path);
+        if (!data) {
+            //文件未找到，不缓存，直接返回
+            return new Map()
+        }
         data.consts.forEach((v, k) => {
             this.const.set(k, v);
         });
