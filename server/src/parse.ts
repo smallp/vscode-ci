@@ -262,6 +262,10 @@ export class parse{
                 arr=arr.slice(index);
                 arr[0]=arr[0].substr(arr[0].indexOf('$this'));
                 return arr.join('->');
+            }else if (arr[index].endsWith('$CI')){
+                arr=arr.slice(index);
+                arr[0]=arr[0].substr(arr[0].indexOf('$CI'));
+                return arr.join('->');
             }
         }
         return '';
@@ -269,8 +273,11 @@ export class parse{
 
     static cleanBracket(words:string,type:wordsType=wordsType.full):string{
         var $this=words.indexOf('$this');
-        if ($this<0) return '';
-        else words=words.substr($this);
+        if ($this < 0) {
+            $this = words.indexOf('$CI');
+            if ($this < 0) return '';
+        }
+        words=words.substr($this);
         var total='';
         for (var index = 0,j=words.length; index < j; index++) {
             if (words[index]!='(') total+=words[index];

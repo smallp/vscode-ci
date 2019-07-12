@@ -113,8 +113,9 @@ documents.onDidSave((e)=>{
 		}else mLoader.parseFile(info.name,info.kind);
 	}
 });
-connection.onExecuteCommand((param:ExecuteCommandParams)=>{
-	mLoader.initModels(settings==null?[]:settings.CI.model);
+connection.onExecuteCommand((param: ExecuteCommandParams) => {
+	mLoader.initModels(settings == null ? [] : settings.CI.model);
+	connection.window.showInformationMessage('refresh success!');
 })
 // This handler provides the initial list of the completion items.
 connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {

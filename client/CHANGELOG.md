@@ -1,4 +1,8 @@
 # Change Log
+## 0.3.1(0.2.12) (2019/07/12)
+* Add feature: support `$CI` or `$this->CI`. [#19](https://github.com/smallp/vscode-ci/issues/19)
+* Try to run `CI: refresh Model` command to figure out if this extension starts.
+
 ## 0.2.10 (2018/03/15)
 * Fix bug: No more errors. [#15](https://github.com/smallp/vscode-ci/issues/15)
 * Keep the setting of model when you refresh the models.

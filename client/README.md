@@ -2,7 +2,7 @@
 
 This extension is developed for codeigniter framework, and it is still under development. Its source is in [GitHub](https://github.com/smallp/vscode-ci).
 
-When there is `system` folder in you workspace, the extension will start and parse the files in your model folder.
+When there is `system` folder in you workspace, the extension will start and parse the files in your model folder. You can try to run `CI: refresh Model` command to figure out if this extension starts.
 
 If you find any bug or suggestion, please add a issue [here](https://github.com/smallp/vscode-ci/issues).
 
@@ -14,11 +14,12 @@ If you find any bug or suggestion, please add a issue [here](https://github.com/
 
 It can provide code completion for all models and some system classes (include db, input and load).
 
-1. When you hint `$this->`, it will display `db`,`input` and the name of other classes.
+1. When you hint `$this->`, it will display `db`,`input` and the name of other classes ( For build in system class, `db`,`input` and `load` are supported. The others, such as `Output` nor `config`, is not supported ).
 2. When you select the class, it will insert the class with '-'. So while you type '>' it will display all the methods of the class.
 3. It supports method chaining **only for** `db` class.
 4. When you hint `className::`, it will display const and static variables.
 5. If you add or delete a model file, you now can use command 'refresh Model' to refresh the model folders.
+6. Support `$CI->input` and `$this->CI->db`. It works better in library classes.
 
 As for the library, the extension will not parse the file unless you open a file loaded the library. It means when you open a file that include the code `$this->load->library('foo')`, the extension will search for the file and parse it.
 

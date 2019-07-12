@@ -4,7 +4,7 @@
     "description": "Code completion for PHP codeigniter framework",
     "author": "Small",
     "license": "MIT",
-    "version": "0.2.11",
+    "version": "0.3.1",
     "publisher": "small",
     "engines": {
         "vscode": "^1.30.0"
@@ -92,8 +92,10 @@
         "update-vscode": "node ./node_modules/vscode/bin/install",
         "postinstall": "node ./node_modules/vscode/bin/install"
     },
-    "dependencies": {
-        "vscode": "^1.1.5",
-        "vscode-languageclient": "^3.5.0"
+	"dependencies": {
+		"vscode-languageclient": "^4.1.4"
+    },
+    "devDependencies": {
+        "vscode": "^1.1.5"
     }
 }

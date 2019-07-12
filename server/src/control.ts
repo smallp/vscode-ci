@@ -119,6 +119,7 @@ export class loader {
             return res;
         }
         let chain = words.split('->');
+        //find the class
         if (chain.length == 1) return res;
         let token: string = chain[chain.length - 2];
         if (token.indexOf(')') >= 0) {
@@ -131,7 +132,7 @@ export class loader {
                 } else return res;//no chain in DB_result
             } else return res;//now we only search db for method chaining
         }
-        if (token.endsWith('$this')) {
+        if (token.endsWith('$this')||token=='CI'||token=='$CI') {
             let l: any;
             let t: string;
             l = this.cache.system.keys();
@@ -194,6 +195,10 @@ export class loader {
         arr = words.split('->');
         if (arr.length<3) return null;
         let claName = arr[1];
+        if (claName == 'CI') {
+            if (arr.length==3) return null;
+            claName = arr[2]
+        }
         claName = this.alias.has(claName) ? this.alias.get(claName) : claName;
         let method = arr.pop();
         let toRet: SignatureHelp = {
@@ -239,15 +244,18 @@ export class loader {
             return null;
         }
         let arr = words.split('->');
-        if (arr.length == 1 || arr[0] != '$this')
+        if (arr.length == 1 || (arr[0] != '$this' && arr[0] != '$CI'))
             return null;
-        else if (arr.length == 2) {
-            let data = this.getClassInfo(arr[1]);
+        if (arr[1] == 'CI') arr.splice(1, 1)
+        var claName = arr[1];
+        if (arr.length == 2) {
+            if (claName == 'CI') claName = arr[2];
+            let data = this.getClassInfo(claName);
             if (data && data.data.classData) {
                 return data.data.classData.location;
             } else {
-                if (!arr[1].endsWith('()')) return null;
-                let fun = arr[1].slice(0, -2);
+                if (!claName.endsWith('()')) return null;
+                let fun = claName.slice(0, -2);
                 let funs = parse.parse.functions(text);
                 for (var x of funs) {
                     if (x.name == fun) {
@@ -256,7 +264,7 @@ export class loader {
                 }
             }
         } else if (arr.length == 3) {
-            let data = this.getClassInfo(arr[1]);
+            let data = this.getClassInfo(claName);
             if (!data) return null;
             let token = arr[2];
             if (!token.endsWith('()')) return null;
@@ -264,7 +272,7 @@ export class loader {
             let info: fun = data.data.funs.get(token);
             return info ? info.location : null;
         } else {
-            if (arr[1] != 'db') return null;
+            if (claName != 'db') return null;
             let method = arr.pop();
             if (!method.endsWith('()')) return null;
             method = method.slice(0, -2);
@@ -279,6 +287,7 @@ export class loader {
         let words = parse.parse.getWords(text, textDocumentPosition.position, parse.wordsType.half);
         words = words.split(parse.parse.paramDeli)[0];
         let arr = words.split('->');
+        if (arr[1]=='CI') arr.splice(1, 1)
         if (arr.length < 3) return null;
         let claName = arr[1];
         claName = this.alias.has(claName) ? this.alias.get(claName) : claName;
