@@ -6,12 +6,11 @@
 
 import {
 	ProposedFeatures,
-	createConnection, IConnection, TextDocumentSyncKind,
+	createConnection, TextDocumentSyncKind,
 	TextDocuments, InitializeResult, TextDocumentPositionParams,
 	CompletionItem, CompletionItemKind, InsertTextFormat,
 	DocumentSymbolParams,SymbolInformation,SignatureHelp,Location,Hover,
-	ExecuteCommandParams,
-	CompletionList
+	ExecuteCommandParams
 } from 'vscode-languageserver';
 import * as loader from './control';
 import * as URI from 'vscode-uri';
@@ -54,28 +53,12 @@ connection.onInitialize((params): InitializeResult => {
 	}
 });
 
-interface Settings {
-	CI: CI;
-}
-
-interface CI {
-	library: Array<string> | object;
-	model: Array<string> | object;
-	other: Array<string>;
-	system:string;
-	app: string;
-	ignoreSymbols: boolean;
-	capitalize: boolean;
-}
-let settings:Settings=null;
 connection.onDidChangeConfiguration((change) => {
-	settings = <Settings>change.settings;
+	mLoader.settings = (<loader.Settings>change.settings).CI;
 	var path:string,
 	index:string;
-	loader.loader.system=settings.CI.system;
-	loader.loader.app=settings.CI.app;
-	for (index in settings.CI.library){
-		path=settings.CI.library[index]
+	for (index in mLoader.settings.library){
+		path=mLoader.settings.library[index]
 		mLoader.parseFile(path,'library');
 		if (!isNumber(index)){//alise by user
 			mLoader.alias.set(index,path)
@@ -90,10 +73,10 @@ connection.onDidChangeConfiguration((change) => {
 			mLoader.display.set(parse.modFirst(path,false),'library')
 		}
 	}
-	for (path of settings.CI.other) {
+	for (path of mLoader.settings.other) {
 		mLoader.loadOther(path);
 	}
-	mLoader.initModels(settings.CI.model);
+	mLoader.initModels();
 });
 
 documents.onDidOpen((e)=>{
@@ -113,8 +96,8 @@ documents.onDidSave((e)=>{
 		}else mLoader.parseFile(info.name,info.kind);
 	}
 });
-connection.onExecuteCommand((param: ExecuteCommandParams) => {
-	mLoader.initModels(settings == null ? [] : settings.CI.model);
+connection.onExecuteCommand((_: ExecuteCommandParams) => {
+	mLoader.initModels();
 	connection.window.showInformationMessage('refresh success!');
 })
 // This handler provides the initial list of the completion items.
@@ -138,7 +121,7 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
 });
 
 connection.onDocumentSymbol((param:DocumentSymbolParams):SymbolInformation[]=> {
-	if (param.textDocument.uri.indexOf(loader.loader.root.toString())<0 || settings.CI.ignoreSymbols) return [];
+	if (param.textDocument.uri.indexOf(loader.loader.root.toString())<0 || mLoader.settings.ignoreSymbols) return [];
 	else return mLoader.allFun(documents.get(param.textDocument.uri));
 });
 

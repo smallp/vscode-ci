@@ -17,10 +17,6 @@ export interface api_fun {
     name: string;
     Range: Range;
 }
-// interface variable{
-//     location:Location;
-//     document:string;
-// }
 export interface class_cache {
     kind: string;
     data: cache;
@@ -29,6 +25,7 @@ export interface class_data {
     location: Location,
     name: string
 }
+//also variable data
 export interface const_data {
     location: Location,
     value: string,
@@ -49,16 +46,29 @@ export interface api_parse {
     funs: Map<string, fun>;
     classData: class_data;
     consts: Map<string, Map<string, const_data>>;
+    // variable: Map<string, Map<string, const_data>>;
+}
+export interface Settings {
+	CI: CI;
+}
+
+export interface CI {
+	library: Array<string> | object;
+	model: Array<string> | object;
+	other: Array<string>;
+	system:string;
+	app: string;
+	ignoreSymbols: boolean;
+	capitalize: boolean;
 }
 export class loader {
     //root of the workspace
     static root: URI = null;
-    static system: string = '';
-    static app: string = '';
     static re = {
         loader: /\$this->load->(.+?)\((.+?)\);/g,
         isStatic: /([a-zA-Z0-9_]*)::([a-zA-Z0-9_\$]*)$/
     };
+    settings: CI = null;
     cache = {
         //include functions and class data
         system: new Map<string, cache>(),
@@ -102,6 +112,7 @@ export class loader {
         let res: CompletionItem[] = [];
         let isStatic = loader.re.isStatic.exec(words);
         if (isStatic) {
+            if (this.settings.ignoreSymbols) return res;
             var claName = isStatic[1];
             if (claName.toLowerCase() == 'self') {
                 var claInfo = this.cached_info.get(textDocumentPosition.textDocument.uri);
@@ -214,7 +225,7 @@ export class loader {
         var lable = method + '(';
         arr = [];
         for (var item of data.param) {
-            arr.push(item.label);
+            arr.push(item.label as string);
         }
         lable += arr.join(',') + ')';
         let signature = { label: lable, parameters: data.param };
@@ -300,8 +311,11 @@ export class loader {
         return { contents: data.document };
     }
 
-    initModels(setting=null): void {
-        let path = `${loader.root.fsPath}/${loader.app}/models/`;
+    initModels(): void {
+        //for alise or autoload
+        let setting:object| string[] = [];
+        if (this.settings!=null) setting=this.settings.model
+        let path = `${loader.root.fsPath}/${this.settings.app}/models/`;
         this.cache.model = new Map<string, cache>();
         this._initModels(path, '');
         let index:string;
@@ -314,7 +328,7 @@ export class loader {
             }else if (path.indexOf('/')>0){
                 //in sub folder, we need add alisa
                 var filename=path.split('/').pop()
-                filename=parse.parse.modFirst(filename,false)
+                filename=parse.parse.modFirst(filename,this.settings.capitalize)
                 this.alias.set(filename,path)
                 this.display.set(filename,'model')
             }//in root folder, _initModels will do it
@@ -334,11 +348,13 @@ export class loader {
                     this.cache.model.set(file, null);
                     if (dir == '') {
                         //add to display if it is in root folder
-                        var name = parse.parse.modFirst(file, false);
+                        var name = parse.parse.modFirst(file, this.settings.capitalize);
                         this.display.set(name, 'model');
                     }
                 } else if (!file.endsWith('html')) {
-                    this._initModels(root, dir + file + '/');
+                    let info = fs.lstatSync(root + dir + file)
+                    if (info.isDirectory())
+                        this._initModels(root, dir + file + '/');
                 }
             }
         });
@@ -399,7 +415,7 @@ export class loader {
         } else {
             //no alias, pass
             if (alias != name) this.alias.set(alias, name);
-            else alias=parse.parse.modFirst(alias,false)
+            else alias=parse.parse.modFirst(alias,this.settings.capitalize)
         }
         return alias;
     }
@@ -434,8 +450,8 @@ export class loader {
             case 'system':
                 if (name == 'db') {
                     //load DB_result
-                    let retData = parse.parse.parseFile(`${path}/${loader.system}/database/DB_result.php`);
-                    let qb_db = parse.parse.parseFile(`${path}/${loader.system}/database/drivers/mysql/mysql_result.php`).funs;
+                    let retData = parse.parse.parseFile(`${path}/${this.settings.system}/database/DB_result.php`);
+                    let qb_db = parse.parse.parseFile(`${path}/${this.settings.system}/database/drivers/mysql/mysql_result.php`).funs;
                     let db = retData.funs;
                     let classData = retData.classData;
                     qb_db.forEach((v, k) => {
@@ -446,14 +462,14 @@ export class loader {
                         classData: classData
                     });
                     //load DB_query_builder + DB_driver, with mysql_driver
-                    db = parse.parse.parseFile(`${path}/${loader.system}/database/DB_driver.php`).funs;
-                    retData = parse.parse.parseFile(`${path}/${loader.system}/database/DB_query_builder.php`);
+                    db = parse.parse.parseFile(`${path}/${this.settings.system}/database/DB_driver.php`).funs;
+                    retData = parse.parse.parseFile(`${path}/${this.settings.system}/database/DB_query_builder.php`);
                     qb_db = retData.funs;
                     classData = retData.classData;
                     qb_db.forEach((v, k) => {
                         db.set(k, v);
                     });
-                    qb_db = parse.parse.parseFile(`${path}/${loader.system}/database/drivers/mysql/mysql_driver.php`).funs;
+                    qb_db = parse.parse.parseFile(`${path}/${this.settings.system}/database/drivers/mysql/mysql_driver.php`).funs;
                     qb_db.forEach((v, k) => {
                         db.set(k, v);
                     });
@@ -465,18 +481,18 @@ export class loader {
                     this.alias.set('CI_DB_query_builder', 'db');
                     return db;
                 } else if (name == 'load') {
-                    path += `/${loader.system}/core/Loader.php`;
-                } else path += `/${loader.system}/core/${filePath}`;
+                    path += `/${this.settings.system}/core/Loader.php`;
+                } else path += `/${this.settings.system}/core/${filePath}`;
                 break;
             case 'model':
-                path += `/${loader.app}/models/${filePath}`;
+                path += `/${this.settings.app}/models/${filePath}`;
                 break;
             case 'library':
                 try {
-                    fs.accessSync(`${path}/${loader.system}/libraries/${filePath}`);
-                    path += `/${loader.system}/libraries/${filePath}`;
+                    fs.accessSync(`${path}/${this.settings.system}/libraries/${filePath}`);
+                    path += `/${this.settings.system}/libraries/${filePath}`;
                 } catch (error) {
-                    path += `/${loader.app}/libraries/${filePath}`;
+                    path += `/${this.settings.app}/libraries/${filePath}`;
                 }
                 break;
             default:

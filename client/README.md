@@ -1,6 +1,6 @@
 # PHP intellisense for codeigniter
 
-This extension is developed for codeigniter framework, and it is still under development. Its source is in [GitHub](https://github.com/smallp/vscode-ci).
+This extension is developed for codeigniter framework.
 
 When there is `system` folder in you workspace, the extension will start and parse the files in your model folder. You can try to run `CI: refresh Model` command to figure out if this extension starts.
 
@@ -25,7 +25,7 @@ As for the library, the extension will not parse the file unless you open a file
 
 ### Document Symbol
 
-Pressing F1 in VS Code, and type @. Then you can get all the methods in this file.
+Pressing F1 in VS Code, and type @. Then you can get all the methods in this file. It also work for outlink.
 
 ### Goto definition
 

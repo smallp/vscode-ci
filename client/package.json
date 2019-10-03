@@ -4,10 +4,10 @@
     "description": "Code completion for PHP codeigniter framework",
     "author": "Small",
     "license": "MIT",
-    "version": "0.3.1",
+    "version": "0.3.2",
     "publisher": "small",
     "engines": {
-        "vscode": "^1.30.0"
+        "vscode": "^1.37.0"
     },
     "categories": [
         "Programming Languages"
@@ -36,7 +36,7 @@
                 "CI.capitalize": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Set true if you want to capitalize the name of model. Enabled in next version."
+                    "description": "Set true if you want to capitalize the name of model."
                 },
                 "CI.ignoreSymbols": {
                     "type": "boolean",
@@ -92,8 +92,8 @@
         "update-vscode": "node ./node_modules/vscode/bin/install",
         "postinstall": "node ./node_modules/vscode/bin/install"
     },
-	"dependencies": {
-		"vscode-languageclient": "^4.1.4"
+    "dependencies": {
+        "vscode-languageclient": "^4.1.4"
     },
     "devDependencies": {
         "vscode": "^1.1.5"
