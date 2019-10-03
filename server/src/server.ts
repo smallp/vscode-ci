@@ -30,8 +30,9 @@ documents.listen(connection);
 // After the server has started the client sends an initilize request. The server receives
 // in the passed params the rootPath of the workspace plus the client capabilites. 
 connection.onInitialize((params): InitializeResult => {
-	loader.loader.root=URI.default.parse(params.rootUri);
+	loader.loader.root = URI.default.parse(params.rootUri);
 	console.log(`start small-ci on ${process.pid}`);
+	mLoader.logger=connection.console
 	return {
 		capabilities: {
 			// Tell the client that the server works in FULL text document sync mode

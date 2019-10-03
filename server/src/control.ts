@@ -68,6 +68,7 @@ export class loader {
         loader: /\$this->load->(.+?)\((.+?)\);/g,
         isStatic: /([a-zA-Z0-9_]*)::([a-zA-Z0-9_\$]*)$/
     };
+    logger = null;
     settings: CI = null;
     cache = {
         //include functions and class data
@@ -172,7 +173,7 @@ export class loader {
             }else{
                 token=this.cache.system.has(token)?token: parse.parse.modFirst(token)
             }
-            var funs:Map<string,fun>=null, kind;
+            var funs:Map<string,fun>=null, kind:string;
             for (kind in this.cache) {
                 if (this.cache[kind].has(token)) {
                     var t = this.cache[kind].get(token);
@@ -220,8 +221,17 @@ export class loader {
         method = method.substring(0, method.indexOf('('));
         let data: fun;
         let cla = this.getClassInfo(claName);
-        data = cla && cla.data.funs.get(method);
-        if (!data) return null;
+        try {
+            data = cla && cla.data.funs.get(method);
+            if (!data) return null;
+        } catch (error) {
+            this.logger.log('Hello! You have found a BUG! It would be very helpful if you can add a issue in github!')
+            this.logger.log('Add issue here: https://github.com/smallp/vscode-ci/issues/new')
+            this.logger.log('Here is the main content. You can just keep the main content when you submit.')
+            this.logger.log(words)
+            this.logger.log(JSON.stringify(cla))
+            return toRet
+        }
         var lable = method + '(';
         arr = [];
         for (var item of data.param) {
@@ -262,17 +272,26 @@ export class loader {
         if (arr.length == 2) {
             if (claName == 'CI') claName = arr[2];
             let data = this.getClassInfo(claName);
-            if (data && data.data.classData) {
-                return data.data.classData.location;
-            } else {
-                if (!claName.endsWith('()')) return null;
-                let fun = claName.slice(0, -2);
-                let funs = parse.parse.functions(text);
-                for (var x of funs) {
-                    if (x.name == fun) {
-                        return { uri: textDocumentPosition.textDocument.uri, range: x.Range };
+            try {
+                if (data && data.data.classData) {
+                    return data.data.classData.location;
+                } else {
+                    if (!claName.endsWith('()')) return null;
+                    let fun = claName.slice(0, -2);
+                    let funs = parse.parse.functions(text);
+                    for (var x of funs) {
+                        if (x.name == fun) {
+                            return { uri: textDocumentPosition.textDocument.uri, range: x.Range };
+                        }
                     }
                 }
+            } catch (error) {
+                this.logger.log('Hello! You have found a BUG! It would be very helpful if you can add a issue in github!')
+                this.logger.log('Add issue here: https://github.com/smallp/vscode-ci/issues/new')
+                this.logger.log('Here is the main content. You can just keep the main content when you submit.')
+                this.logger.log(words)
+                this.logger.log(JSON.stringify(data))
+                return null
             }
         } else if (arr.length == 3) {
             let data = this.getClassInfo(claName);
@@ -280,8 +299,17 @@ export class loader {
             let token = arr[2];
             if (!token.endsWith('()')) return null;
             token = token.slice(0, -2);
-            let info: fun = data.data.funs.get(token);
-            return info ? info.location : null;
+            try {
+                let info: fun = data.data.funs.get(token);
+                return info ? info.location : null;
+            } catch (error) {
+                this.logger.log('Hello! You have found a BUG! It would be very helpful if you can add a issue in github!')
+                this.logger.log('Add issue here: https://github.com/smallp/vscode-ci/issues/new')
+                this.logger.log('Here is the main content. You can just keep the main content when you submit.')
+                this.logger.log(words)
+                this.logger.log(JSON.stringify(data))
+                return null
+            }
         } else {
             if (claName != 'db') return null;
             let method = arr.pop();
@@ -306,8 +334,17 @@ export class loader {
         method = method.substring(0, method.indexOf('('));
         let data: fun;
         let cla = this.getClassInfo(claName);
-        data = cla && cla.data.funs.get(method);
-        if (!data) return null;
+        try {
+            data = cla && cla.data.funs.get(method);
+            if (!data) return null;
+        } catch (error) {
+            this.logger.log('Hello! You have found a BUG! It would be very helpful if you can add a issue in github!')
+            this.logger.log('Add issue here: https://github.com/smallp/vscode-ci/issues/new')
+            this.logger.log('Here is the main content. You can just keep the main content when you submit.')
+            this.logger.log(words)
+            this.logger.log(JSON.stringify(cla))
+            return null
+        }
         return { contents: data.document };
     }
 
