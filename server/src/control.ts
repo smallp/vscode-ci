@@ -41,12 +41,10 @@ export interface cache_info {
 export interface cache {
     funs: Map<string, fun>;
     classData: class_data;
+    variable: Map<string, const_data>;
 }
-export interface api_parse {
-    funs: Map<string, fun>;
-    classData: class_data;
+export interface api_parse extends cache {
     consts: Map<string, Map<string, const_data>>;
-    // variable: Map<string, Map<string, const_data>>;
 }
 export interface Settings {
 	CI: CI;
@@ -173,25 +171,41 @@ export class loader {
             }else{
                 token=this.cache.system.has(token)?token: parse.parse.modFirst(token)
             }
-            var funs:Map<string,fun>=null, kind:string;
+            var info:cache, kind:string;
             for (kind in this.cache) {
                 if (this.cache[kind].has(token)) {
                     var t = this.cache[kind].get(token);
                     if (t === null) {
                         try {
-                            funs = this.parseFile(token, kind);
+                            this.parseFile(token, kind);
                         } catch (error) {
                             return res;
                         }
-                    }else funs=t.funs;
+                    }
+                    info = this.cache[kind].get(token);
+                    if (info === null) return res;
                     break;
                 }
             }
-            funs&&funs.forEach((v,k)=>{
-                res.push({
-                    label: k, kind: CompletionItemKind.Method, detail: `${kind} ${token}`,documentation:v.document
-                });
-            })
+            try {
+                info.funs.forEach((v,k)=>{
+                    res.push({
+                        label: k, kind: CompletionItemKind.Method, detail: `${kind} ${token}`,documentation:v.document
+                    });
+                })
+                info.variable.forEach((v,k)=>{
+                    res.push({
+                        label: k, kind: CompletionItemKind.Variable, detail: `${kind} ${token}`,documentation:v.document
+                    });
+                })
+            } catch (error) {
+                this.logger.log('Hello! You have found a BUG! It would be very helpful if you can add a issue in github!')
+                this.logger.log('Add issue here: https://github.com/smallp/vscode-ci/issues/new')
+                this.logger.log('Here is the main content. You can just keep the main content when you submit.')
+                this.logger.log(words)
+                this.logger.log(JSON.stringify([...this.cache[kind]]))
+                return []
+            }
         }
         return res;
     }
@@ -297,10 +311,10 @@ export class loader {
             let data = this.getClassInfo(claName);
             if (!data) return null;
             let token = arr[2];
-            if (!token.endsWith('()')) return null;
-            token = token.slice(0, -2);
+            if (token.endsWith('()'))
+                token = token.slice(0, -2);
             try {
-                let info: fun = data.data.funs.get(token);
+                let info = data.data.funs.get(token) || data.data.variable.get(token)
                 return info ? info.location : null;
             } catch (error) {
                 this.logger.log('Hello! You have found a BUG! It would be very helpful if you can add a issue in github!')
@@ -496,7 +510,8 @@ export class loader {
                     });
                     this.cache[kind].set('CI_DB_result', {
                         funs: db,
-                        classData: classData
+                        classData: classData,
+                        variable:new Map()
                     });
                     //load DB_query_builder + DB_driver, with mysql_driver
                     db = parse.parse.parseFile(`${path}/${this.settings.system}/database/DB_driver.php`).funs;
@@ -512,7 +527,8 @@ export class loader {
                     });
                     this.cache[kind].set(name, {
                         funs: db,
-                        classData: classData
+                        classData: classData,
+                        variable:new Map()
                     });
                     //for method chaining
                     this.alias.set('CI_DB_query_builder', 'db');

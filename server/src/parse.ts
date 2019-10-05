@@ -1,8 +1,3 @@
-import {
-    SymbolInformation,SymbolKind,Location,CompletionItemKind,
-    TextDocumentPositionParams,CompletionItem,SignatureHelp,
-    ParameterInformation
-} from 'vscode-languageserver';
 import * as fs from 'fs';
 import * as c from './control';
 export enum wordsType{
@@ -25,6 +20,7 @@ export class parse{
         completeWord:/^[a-zA-Z0-9_]*(\()?/,
         const: /const ([a-zA-Z0-9_ ]*)=(.*);/ig,
         static: /static \$([a-zA-Z0-9_ ]*)=(.*);/ig,
+        variable: /[public|protected|private] \$([a-zA-Z0-9_ ]*)/ig,
         class: /class (.*?)\s*{/ig
     };
 
@@ -38,8 +34,12 @@ export class parse{
         let funs=new Map();
         let match=null;
         let uri = this.path2uri(path);
+        let variable = null;
         //get funs info
-        while ((match = this.re.fun.exec(content)) != null){
+        while ((match = this.re.fun.exec(content)) != null) {
+            if (!variable) {
+                variable=parse.parseVar(content.substr(0,match.index),uri)
+            }
             //ignore private method
             if (match[1].startsWith('_')) continue;
             let data:c.fun={param:null,
@@ -121,7 +121,34 @@ export class parse{
         }
         let consts=this.parseConst(content,uri);
         //get class name
-        return { funs: funs, classData: classData,consts:consts};
+        return { funs: funs, classData: classData,consts:consts,variable:variable?variable:new Map()};
+    }
+
+    static parseVar(content: string,uri:string): Map<string, c.const_data>
+    {
+        let con = new Map<string, c.const_data>();
+        let match = null;
+        var arr = content.split('\n');
+        while ((match = this.re.variable.exec(content)) != null) {
+            var lines = content.substr(0, match.index).split('\n');
+            var line = lines.length - 1;
+            var suffLength = lines.pop().length;
+            var str=arr[line].trim()
+            var lineContent = str.split('//');
+            let item: c.const_data = {
+                location: {
+                    uri: uri,
+                    range: {
+                        start: { line: line, character: suffLength },
+                        end: { line: line, character: suffLength + str.length }
+                    }
+                },
+                value: '',
+                document: lineContent.length>1?lineContent.slice(1).join('//'):''
+            }
+            con.set(match[1].trim(), item);
+        }
+        return con;
     }
 
     //get const and static

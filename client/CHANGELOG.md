@@ -1,4 +1,9 @@
 # Change Log
+## 0.3.2 (2019/10/05)
+* Add more debug info. If there are any caught error, the output channal would show more debug info. You can push these info as an issue.  [#31](https://github.com/smallp/vscode-ci/issues/31)
+* Enable capitalize. [#16](https://github.com/smallp/vscode-ci/issues/16)
+* Add feature: now code completion and definition supports variables.
+
 ## 0.3.1(0.2.12) (2019/07/12)
 * Add feature: support `$CI` or `$this->CI`. [#19](https://github.com/smallp/vscode-ci/issues/19)
 * Try to run `CI: refresh Model` command to figure out if this extension starts.

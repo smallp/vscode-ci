@@ -20,6 +20,7 @@ It can provide code completion for all models and some system classes (include d
 4. When you hint `className::`, it will display const and static variables.
 5. If you add or delete a model file, you now can use command 'refresh Model' to refresh the model folders.
 6. Support `$CI->input` and `$this->CI->db`. It works better in library classes.
+7. Support variables in models. Such as `$this->mymodel->some_variables`.
 
 As for the library, the extension will not parse the file unless you open a file loaded the library. It means when you open a file that include the code `$this->load->library('foo')`, the extension will search for the file and parse it.
 
