@@ -1,4 +1,7 @@
 # Change Log
+## 0.3.3 (2019/11/04)
+* Fix bug in complete. [#33](https://github.com/smallp/vscode-ci/issues/33)
+
 ## 0.3.2 (2019/10/05)
 * Add more debug info. If there are any caught error, the output channal would show more debug info. You can push these info as an issue.  [#31](https://github.com/smallp/vscode-ci/issues/31)
 * Enable capitalize. [#16](https://github.com/smallp/vscode-ci/issues/16)

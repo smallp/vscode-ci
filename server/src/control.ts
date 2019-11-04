@@ -171,7 +171,7 @@ export class loader {
             }else{
                 token=this.cache.system.has(token)?token: parse.parse.modFirst(token)
             }
-            var info:cache, kind:string;
+            var info:cache=null, kind:string;
             for (kind in this.cache) {
                 if (this.cache[kind].has(token)) {
                     var t = this.cache[kind].get(token);
@@ -183,10 +183,10 @@ export class loader {
                         }
                     }
                     info = this.cache[kind].get(token);
-                    if (info === null) return res;
                     break;
                 }
             }
+            if (info === null) return res;
             try {
                 info.funs.forEach((v,k)=>{
                     res.push({
@@ -199,7 +199,7 @@ export class loader {
                     });
                 })
             } catch (error) {
-                this.logger.log('Hello! You have found a BUG! It would be very helpful if you can add a issue in github!')
+                this.logger.log('Hello! You have found a BUG in complete! It would be very helpful if you can add a issue in github!')
                 this.logger.log('Add issue here: https://github.com/smallp/vscode-ci/issues/new')
                 this.logger.log('Here is the main content. You can just keep the main content when you submit.')
                 this.logger.log(words)
@@ -239,7 +239,7 @@ export class loader {
             data = cla && cla.data.funs.get(method);
             if (!data) return null;
         } catch (error) {
-            this.logger.log('Hello! You have found a BUG! It would be very helpful if you can add a issue in github!')
+            this.logger.log('Hello! You have found a BUG in signature! It would be very helpful if you can add a issue in github!')
             this.logger.log('Add issue here: https://github.com/smallp/vscode-ci/issues/new')
             this.logger.log('Here is the main content. You can just keep the main content when you submit.')
             this.logger.log(words)
@@ -300,7 +300,7 @@ export class loader {
                     }
                 }
             } catch (error) {
-                this.logger.log('Hello! You have found a BUG! It would be very helpful if you can add a issue in github!')
+                this.logger.log('Hello! You have found a BUG in definition! It would be very helpful if you can add a issue in github!')
                 this.logger.log('Add issue here: https://github.com/smallp/vscode-ci/issues/new')
                 this.logger.log('Here is the main content. You can just keep the main content when you submit.')
                 this.logger.log(words)
@@ -317,7 +317,7 @@ export class loader {
                 let info = data.data.funs.get(token) || data.data.variable.get(token)
                 return info ? info.location : null;
             } catch (error) {
-                this.logger.log('Hello! You have found a BUG! It would be very helpful if you can add a issue in github!')
+                this.logger.log('Hello! You have found a BUG in definition! It would be very helpful if you can add a issue in github!')
                 this.logger.log('Add issue here: https://github.com/smallp/vscode-ci/issues/new')
                 this.logger.log('Here is the main content. You can just keep the main content when you submit.')
                 this.logger.log(words)
@@ -352,7 +352,7 @@ export class loader {
             data = cla && cla.data.funs.get(method);
             if (!data) return null;
         } catch (error) {
-            this.logger.log('Hello! You have found a BUG! It would be very helpful if you can add a issue in github!')
+            this.logger.log('Hello! You have found a BUG in hover! It would be very helpful if you can add a issue in github!')
             this.logger.log('Add issue here: https://github.com/smallp/vscode-ci/issues/new')
             this.logger.log('Here is the main content. You can just keep the main content when you submit.')
             this.logger.log(words)
