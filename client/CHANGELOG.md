@@ -1,4 +1,9 @@
 # Change Log
+## 0.3.4 (2019/11/28)
+* The way dealing with case of model now is the same with CI. [#34](https://github.com/smallp/vscode-ci/issues/34)
+* Remove the setting `capitalize`.
+* `ignoreSymbols` affects more.
+
 ## 0.3.3 (2019/11/04)
 * Fix bug in complete. [#33](https://github.com/smallp/vscode-ci/issues/33)
 

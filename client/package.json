@@ -4,7 +4,7 @@
     "description": "Code completion for PHP codeigniter framework",
     "author": "Small",
     "license": "MIT",
-    "version": "0.3.3",
+    "version": "0.3.4",
     "publisher": "small",
     "engines": {
         "vscode": "^1.37.0"
@@ -33,15 +33,10 @@
             "type": "object",
             "title": "CI autoload",
             "properties": {
-                "CI.capitalize": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Set true if you want to capitalize the name of model."
-                },
                 "CI.ignoreSymbols": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Set true if you are using other extension to display symbols."
+                    "description": "Set true if you are using other extension to display symbols, deal with $this, and static vars."
                 },
                 "CI.model": {
                     "type": [

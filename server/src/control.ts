@@ -57,7 +57,6 @@ export interface CI {
 	system:string;
 	app: string;
 	ignoreSymbols: boolean;
-	capitalize: boolean;
 }
 export class loader {
     //root of the workspace
@@ -111,7 +110,6 @@ export class loader {
         let res: CompletionItem[] = [];
         let isStatic = loader.re.isStatic.exec(words);
         if (isStatic) {
-            if (this.settings.ignoreSymbols) return res;
             var claName = isStatic[1];
             if (claName.toLowerCase() == 'self') {
                 var claInfo = this.cached_info.get(textDocumentPosition.textDocument.uri);
@@ -156,14 +154,16 @@ export class loader {
                     detail: type + ' ' + (this.alias.has(name) ? this.alias.get(name) : name)
                 });
             }
-            l = parse.parse.functions(text);
-            var item: api_fun;
-            for (item of l) {
-                if (!item.name.startsWith('__'))
-                    res.push({
-                        label: item.name, kind: CompletionItemKind.Method,
-                        detail: 'method ' + item.name
-                    });
+            if (!this.settings.ignoreSymbols && token.endsWith('$this')) {
+                l = parse.parse.functions(text);
+                var item: api_fun;
+                for (item of l) {
+                    if (!item.name.startsWith('__'))
+                        res.push({
+                            label: item.name, kind: CompletionItemKind.Method,
+                            detail: 'method ' + item.name
+                        });
+                }
             }
         } else {
             if (this.alias.has(token)){
@@ -284,13 +284,13 @@ export class loader {
         if (arr[1] == 'CI') arr.splice(1, 1)
         var claName = arr[1];
         if (arr.length == 2) {
-            if (claName == 'CI') claName = arr[2];
             let data = this.getClassInfo(claName);
             try {
                 if (data && data.data.classData) {
                     return data.data.classData.location;
                 } else {
-                    if (!claName.endsWith('()')) return null;
+                    //not a function or use third extension
+                    if (!claName.endsWith('()') || this.settings.ignoreSymbols) return null;
                     let fun = claName.slice(0, -2);
                     let funs = parse.parse.functions(text);
                     for (var x of funs) {
@@ -379,7 +379,6 @@ export class loader {
             }else if (path.indexOf('/')>0){
                 //in sub folder, we need add alisa
                 var filename=path.split('/').pop()
-                filename=parse.parse.modFirst(filename,this.settings.capitalize)
                 this.alias.set(filename,path)
                 this.display.set(filename,'model')
             }//in root folder, _initModels will do it
@@ -399,7 +398,7 @@ export class loader {
                     this.cache.model.set(file, null);
                     if (dir == '') {
                         //add to display if it is in root folder
-                        var name = parse.parse.modFirst(file, this.settings.capitalize);
+                        var name = parse.parse.modFirst(file, false);
                         this.display.set(name, 'model');
                     }
                 } else if (!file.endsWith('html')) {
@@ -461,12 +460,11 @@ export class loader {
             //model is in a directory. alias the name
             var arr = name.split('/');
             var fileName = arr.pop();
-            alias = alias == name ? parse.parse.modFirst(fileName,false) : alias;
+            alias = alias == name ? fileName : alias;
             this.alias.set(alias, parse.parse.realPath(name));
         } else {
             //no alias, pass
             if (alias != name) this.alias.set(alias, name);
-            else alias=parse.parse.modFirst(alias,this.settings.capitalize)
         }
         return alias;
     }

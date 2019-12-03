@@ -17,7 +17,7 @@ It can provide code completion for all models and some system classes (include d
 1. When you hint `$this->`, it will display `db`,`input` and the name of other classes ( For build in system class, `db`,`input` and `load` are supported. The others, such as `Output` nor `config`, is not supported ).
 2. When you select the class, it will insert the class with '-'. So while you type '>' it will display all the methods of the class.
 3. It supports method chaining **only for** `db` class.
-4. When you hint `className::`, it will display const and static variables.
+4. When you hint `className::`, it will display const and static variables. Won't work if you set `ignoreSymbols` to true.
 5. If you add or delete a model file, you now can use command 'refresh Model' to refresh the model folders.
 6. Support `$CI->input` and `$this->CI->db`. It works better in library classes.
 7. Support variables in models. Such as `$this->mymodel->some_variables`.
@@ -26,7 +26,7 @@ As for the library, the extension will not parse the file unless you open a file
 
 ### Document Symbol
 
-Pressing F1 in VS Code, and type @. Then you can get all the methods in this file. It also work for outlink.
+Pressing F1 in VS Code, and type @. Then you can get all the methods in this file. It also work for outlink. Won't work if you set `ignoreSymbols` to true.
 
 ### Goto definition
 
@@ -37,6 +37,7 @@ You can goto definition for all the models, libraries, their methods and const v
 You can hover to get a method's documents.
 
 ## Known issues
+* If you are using php extensions such as `PHP IntelliSense` and `PHP Intelephense`, you can set `ignoreSymbols` to true to remove duplicate hints.
 * If there are classes in one file, it may not work well. However, that is a rare situation. So there is no plan to fix it.
 * If there is a library that has the same name with a model, the library will be ignored as it is a litter troublesome to diff them.
 
