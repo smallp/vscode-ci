@@ -1,4 +1,7 @@
 # Change Log
+## 0.3.5 (2019/12/16)
+* Fix: Correct case in model and library.
+
 ## 0.3.4 (2019/11/28)
 * The way dealing with case of model now is the same with CI. [#34](https://github.com/smallp/vscode-ci/issues/34)
 * Remove the setting `capitalize`.

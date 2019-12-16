@@ -76,7 +76,7 @@ export class loader {
     };
     //include const and static
     const = new Map<string, Map<string, const_data>>();
-    //use for class alias
+    //key is display name. value is relate file's path.
     alias = new Map<string, string>();
     //use for quick search and display
     display = new Map<string, string>();
@@ -424,9 +424,8 @@ export class loader {
                     if (a.length > 1) {
                         //has alias
                         alias = a[1].trim().slice(1, -1);
-                        this._setAlise(name, alias);
                     } else {
-                        alias = this._setAlise(name);
+                        alias = a[0].trim().slice(1, -1);
                     }
                 } else {
                     if (a.length >= 3) {
@@ -434,14 +433,14 @@ export class loader {
                         if (alias.match(/^['"](.+?)['"]$/)) {
                             //has alias
                             alias = alias.slice(1, -1);
-                            this._setAlise(name, alias);
                         } else {
-                            alias = this._setAlise(name);
+                            alias = a[0].trim().slice(1, -1);
                         }
                     } else {
-                        alias = this._setAlise(name);
+                        alias = a[0].trim().slice(1, -1);
                     }
                 }
+                this._setAlise(name, alias);
                 this.display.set(alias, match[1]);
                 if (!this.cache[match[1]].get(name)) {
                     this.parseFile(name, match[1]);
