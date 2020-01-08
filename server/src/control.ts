@@ -416,8 +416,8 @@ export class loader {
         while ((match = loader.re.loader.exec(content)) != null) {
             if (match[1] == 'model' || match[1] == 'library') {
                 var a: Array<string> = match[2].split(',');
-                let name: string = a[0].trim().slice(1, -1);
-                name=parse.parse.realPath(name)
+                let oriname: string = a[0].trim().slice(1, -1);
+                let name:string = parse.parse.realPath(oriname);
                 let alias: string;
                 if (a.length == 1 && this.cache[match[1]].has(name)) continue;//no alias, has loaded
                 if (match[1] == 'model') {
@@ -425,7 +425,7 @@ export class loader {
                         //has alias
                         alias = a[1].trim().slice(1, -1);
                     } else {
-                        alias = a[0].trim().slice(1, -1);
+                        alias = oriname.split('/').pop()
                     }
                 } else {
                     if (a.length >= 3) {
@@ -434,38 +434,19 @@ export class loader {
                             //has alias
                             alias = alias.slice(1, -1);
                         } else {
-                            alias = a[0].trim().slice(1, -1);
+                            alias = oriname.split('/').pop()
                         }
                     } else {
-                        alias = a[0].trim().slice(1, -1);
+                        alias = oriname.split('/').pop()
                     }
                 }
-                this._setAlise(name, alias);
+                alias != name && this.alias.set(alias, name);
                 this.display.set(alias, match[1]);
                 if (!this.cache[match[1]].get(name)) {
                     this.parseFile(name, match[1]);
                 }
             }
         }
-    }
-
-    /**
-     * deal alias or subfloder for CI_Load class
-     * @param name filename
-     * @param alias alise of class
-     */
-    _setAlise(name: string, alias: string = name): string {
-        if (name.indexOf('/') >= 0) {
-            //model is in a directory. alias the name
-            var arr = name.split('/');
-            var fileName = arr.pop();
-            alias = alias == name ? fileName : alias;
-            this.alias.set(alias, parse.parse.realPath(name));
-        } else {
-            //no alias, pass
-            if (alias != name) this.alias.set(alias, name);
-        }
-        return alias;
     }
 
     //load file in setting-other

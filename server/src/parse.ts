@@ -298,7 +298,8 @@ export class parse{
         return '';
     }
 
-    static cleanBracket(words:string,type:wordsType=wordsType.full):string{
+    static cleanBracket(words: string, type: wordsType = wordsType.full): string{
+        words=words.replace(/\s/g,'')
         var $this=words.indexOf('$this');
         if ($this < 0) {
             $this = words.indexOf('$CI');

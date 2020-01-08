@@ -1,4 +1,9 @@
 # Change Log
+
+## 0.3.5 (2020/01/08)
+* Fix: works fine when model in subfolder. [#35](https://github.com/smallp/vscode-ci/issues/35)
+* Feature: allow space between `->` and words. [#36](https://github.com/smallp/vscode-ci/issues/36)
+
 ## 0.3.5 (2019/12/16)
 * Fix: Correct case in model and library.
 
