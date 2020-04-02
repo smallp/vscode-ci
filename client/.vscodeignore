@@ -2,3 +2,4 @@ yarn.lock
 *.map
 src/*
 tsconfig.json
+webpack.config.js

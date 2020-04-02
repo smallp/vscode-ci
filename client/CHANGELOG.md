@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.3.7 (2020/04/02)
+* Fix: follow vscode guide, remove unneed resolveProvider. [#35](https://github.com/smallp/vscode-ci/issues/37)
+* Minimize server with webpack.
+
 ## 0.3.5 (2020/01/08)
 * Fix: works fine when model in subfolder. [#35](https://github.com/smallp/vscode-ci/issues/35)
 * Feature: allow space between `->` and words. [#36](https://github.com/smallp/vscode-ci/issues/36)

@@ -79,7 +79,7 @@ export function activate(context: ExtensionContext) {
 				debug: { module, transport: TransportKind.ipc, options: debugOptions }
 			};
 			let clientOptions: LanguageClientOptions = {
-				documentSelector: [{ language: 'php' }],
+				documentSelector: [{ scheme: 'file', language: 'php' }],
 				synchronize: {
 					configurationSection: 'CI',
 					// Notify the server about file changes to '.clientrc files contain in the workspace
@@ -99,7 +99,7 @@ export function activate(context: ExtensionContext) {
 						if (!item) {
 							item = window.createStatusBarItem()
 						}
-						item.text = 'small-CI initing'
+						item.text = 'small-CI initing...'
 						item.show()
 					})
 					client.onNotification('hideStatus', () => {

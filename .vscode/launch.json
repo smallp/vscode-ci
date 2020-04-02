@@ -25,8 +25,7 @@
 			"sourceMaps": true,
 			"outFiles": [
 				"${workspaceRoot}/client/server/**/*.js"
-			],
-			"preLaunchTask": "watch:server"
+			]
 		}
 	]
 }

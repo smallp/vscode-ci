@@ -5,7 +5,6 @@ import {
 } from 'vscode-languageserver';
 import * as fs from 'fs';
 import * as parse from './parse';
-import URI from 'vscode-uri';
 import { isNumber } from 'util';
 export interface fun {
     param: ParameterInformation[];
@@ -60,7 +59,7 @@ export interface CI {
 }
 export class loader {
     //root of the workspace
-    static root: URI = null;
+    static root: string = null;
     static re = {
         loader: /\$this->load->(.+?)\((.+?)\);/g,
         isStatic: /([a-zA-Z0-9_]*)::([a-zA-Z0-9_\$]*)$/
@@ -193,7 +192,9 @@ export class loader {
             try {
                 info.funs.forEach((v,k)=>{
                     res.push({
-                        label: k, kind: CompletionItemKind.Method, detail: `${kind} ${token}`,documentation:v.document
+                        label: k, kind: CompletionItemKind.Method, detail: `${kind} ${token}`,documentation:v.document,
+                        insertText: k + '($1)$0',
+                        insertTextFormat : InsertTextFormat.Snippet,
                     });
                 })
                 info.variable.forEach((v,k)=>{
@@ -369,7 +370,7 @@ export class loader {
         //for alise or autoload
         let setting:object| string[] = [];
         if (this.settings!=null) setting=this.settings.model
-        let path = `${loader.root.fsPath}/${this.settings.app}/models/`;
+        let path = `${loader.root}/${this.settings.app}/models/`;
         this.cache.model = new Map<string, cache>();
         this._initModels(path, '');
         let index:string;
@@ -454,7 +455,7 @@ export class loader {
 
     //load file in setting-other
     loadOther(str: string) {
-        let path = loader.root.fsPath + '/' + str;
+        let path = loader.root + '/' + str;
         let content = fs.readFileSync(path, { encoding: 'utf-8' });
         content&&this.parseConst(content, parse.parse.path2uri(path));
     }
@@ -475,7 +476,7 @@ export class loader {
 
     //parse file to collect info
     parseFile(name: string, kind: string): Map<string,fun> {
-        let path = loader.root.fsPath;
+        let path = loader.root;
         if (this.alias.has(name)) name = this.alias.get(name);
         let filePath =parse.parse.realPath(name) + '.php';
         switch (kind) {
