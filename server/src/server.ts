@@ -8,7 +8,7 @@ import {
 	ProposedFeatures,
 	createConnection, TextDocumentSyncKind,
 	TextDocuments, InitializeResult, TextDocumentPositionParams,
-	CompletionItem, CompletionItemKind, InsertTextFormat,
+	CompletionItem,
 	DocumentSymbolParams,SymbolInformation,SignatureHelp,Location,Hover,
 	ExecuteCommandParams
 } from 'vscode-languageserver';
@@ -44,7 +44,7 @@ connection.onInitialize((params): InitializeResult => {
 				triggerCharacters: [ '(' ]
 			},
 			completionProvider: {
-				resolveProvider: true,
+				resolveProvider: false,
 				triggerCharacters:['>',':']
 			},
 			executeCommandProvider:{
@@ -57,7 +57,8 @@ connection.onInitialize((params): InitializeResult => {
 connection.onDidChangeConfiguration((change) => {
 	mLoader.settings = (<loader.Settings>change.settings).CI;
 	var path:string,
-	index:string;
+		index: string;
+	connection.sendNotification('showStatus')
 	for (index in mLoader.settings.library){
 		path=mLoader.settings.library[index]
 		mLoader.parseFile(path,'library');
@@ -78,6 +79,7 @@ connection.onDidChangeConfiguration((change) => {
 		mLoader.loadOther(path);
 	}
 	mLoader.initModels();
+	connection.sendNotification('hideStatus')
 });
 
 documents.onDidOpen((e)=>{
@@ -107,18 +109,6 @@ connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): Comp
 	else return mLoader.complete(
 		textDocumentPosition,
 		documents.get(textDocumentPosition.textDocument.uri).getText());
-});
-
-// This handler resolve additional information for the item selected in
-// the completion list.
-connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
-	if (item.kind==CompletionItemKind.Class){
-		item.insertText=item.label+'-';
-	}else if (item.kind==CompletionItemKind.Method){
-		item.insertText = item.label + '($1)$0';
-		item.insertTextFormat = InsertTextFormat.Snippet;
-	}
-	return item;
 });
 
 connection.onDocumentSymbol((param:DocumentSymbolParams):SymbolInformation[]=> {

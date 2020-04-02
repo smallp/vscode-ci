@@ -1,8 +1,8 @@
 import * as path from 'path';
 import * as fs from 'fs';
-import { 
-	workspace as Workspace, window as Window, ExtensionContext, TextDocument, OutputChannel, WorkspaceFolder, Uri
-} from 'vscode'; 
+import {
+	workspace as Workspace, window as Window, ExtensionContext, TextDocument, OutputChannel, WorkspaceFolder, Uri, window, StatusBarItem
+} from 'vscode';
 
 import {
 	LanguageClient, LanguageClientOptions, TransportKind
@@ -68,17 +68,18 @@ export function activate(context: ExtensionContext) {
 		try {
 			fs.accessSync(`${folder.uri.fsPath}/${system}`)
 		} catch (error) {
+			outputChannel.appendLine('No system folder found! Exit!')
 			return;
 		}
-		
+
 		if (!clients.has(folder.uri.toString())) {
 			let debugOptions = { execArgv: ["--nolazy", `--inspect=${6011 + clients.size}`] };
 			let serverOptions = {
 				run: { module, transport: TransportKind.ipc },
-				debug: { module, transport: TransportKind.ipc, options: debugOptions}
+				debug: { module, transport: TransportKind.ipc, options: debugOptions }
 			};
 			let clientOptions: LanguageClientOptions = {
-				documentSelector: [{language: 'php'}],
+				documentSelector: [{ language: 'php' }],
 				synchronize: {
 					configurationSection: 'CI',
 					// Notify the server about file changes to '.clientrc files contain in the workspace
@@ -88,9 +89,27 @@ export function activate(context: ExtensionContext) {
 				workspaceFolder: folder,
 				outputChannel: outputChannel
 			}
-			let client = new LanguageClient('small-ci', serverOptions, clientOptions);
+			let client = new LanguageClient('small-ci', serverOptions, clientOptions, true);
+			let item: StatusBarItem = null
 			client.registerProposedFeatures();
 			client.start();
+			client.onReady()
+				.then(() => {
+					client.onNotification('showStatus', () => {
+						if (!item) {
+							item = window.createStatusBarItem()
+						}
+						item.text = 'small-CI initing'
+						item.show()
+					})
+					client.onNotification('hideStatus', () => {
+						if (!item) return
+						item.text = 'small-CI init done'
+						setTimeout(() => {
+							item.hide()
+						}, 5000);
+					})
+				})
 			clients.set(folder.uri.toString(), client);
 		}
 	}
@@ -98,7 +117,7 @@ export function activate(context: ExtensionContext) {
 	Workspace.onDidOpenTextDocument(didOpenTextDocument);
 	Workspace.textDocuments.forEach(didOpenTextDocument);
 	Workspace.onDidChangeWorkspaceFolders((event) => {
-		for (let folder  of event.removed) {
+		for (let folder of event.removed) {
 			let client = clients.get(folder.uri.toString());
 			if (client) {
 				clients.delete(folder.uri.toString());

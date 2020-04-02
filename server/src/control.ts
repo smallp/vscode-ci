@@ -1,7 +1,7 @@
 import {
     SymbolInformation, SymbolKind, Location, CompletionItemKind,
     TextDocumentPositionParams, CompletionItem, SignatureHelp,
-    ParameterInformation, Range, Hover, TextDocument
+    ParameterInformation, Range, Hover, TextDocument, InsertTextFormat
 } from 'vscode-languageserver';
 import * as fs from 'fs';
 import * as parse from './parse';
@@ -146,11 +146,12 @@ export class loader {
             l = this.cache.system.keys();
             for (t of l) {
                 if (t != 'CI_DB_result')
-                    res.push({ label: t, kind: CompletionItemKind.Class, detail: 'system class'});
+                    res.push({ label: t, kind: CompletionItemKind.Class, detail: 'system class', insertText: t + '-' });
             }
             for (var [name, type] of this.display) {
                 res.push({
                     label: name, kind: CompletionItemKind.Class,
+                    insertText: name + '-',
                     detail: type + ' ' + (this.alias.has(name) ? this.alias.get(name) : name)
                 });
             }
@@ -161,6 +162,8 @@ export class loader {
                     if (!item.name.startsWith('__'))
                         res.push({
                             label: item.name, kind: CompletionItemKind.Method,
+                            insertText: item.name + '($1)$0',
+                            insertTextFormat : InsertTextFormat.Snippet,
                             detail: 'method ' + item.name
                         });
                 }
