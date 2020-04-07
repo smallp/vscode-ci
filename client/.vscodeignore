@@ -1,5 +1,5 @@
 yarn.lock
-*.map
+**/*.map
 src/*
 tsconfig.json
 webpack.config.js
