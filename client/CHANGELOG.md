@@ -1,7 +1,8 @@
 # Change Log
 
-## 0.3.8 (2020/04/07)
+## 0.3.9 (2020/04/07)
 * Fix: Use vscode-uri again for Windows.
+* Fix: No error for `->->`.[#39](https://github.com/smallp/vscode-ci/issues/39)
 
 ## 0.3.7 (2020/04/02)
 * Fix: follow vscode guide, remove unneed resolveProvider. [#35](https://github.com/smallp/vscode-ci/issues/37)

@@ -47,6 +47,7 @@ function getOuterMostWorkspaceFolder(folder: WorkspaceFolder): WorkspaceFolder {
 export function activate(context: ExtensionContext) {
 
 	let module = context.asAbsolutePath(path.join('server', 'server.js'));
+	// let module = context.asAbsolutePath(path.join('../server', 'out/server.js'));
 	let outputChannel: OutputChannel = Window.createOutputChannel('small-ci');
 
 	function didOpenTextDocument(document: TextDocument): void {

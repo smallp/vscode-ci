@@ -394,7 +394,8 @@ export class parse{
      * @param s The string
      * @param up toUpperCase or toLowerCase
      */
-    static modFirst(s:string,up=true):string{
+    static modFirst(s: string, up = true): string{
+        if (s == '') return '';
         return (up?s[0].toUpperCase():s[0].toLowerCase())+s.substr(1);
     }
 
