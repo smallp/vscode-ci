@@ -70,6 +70,11 @@
                     "type": "string",
                     "default": "application",
                     "description": "Path of CI's application folder."
+                },
+                "CI.viewFilesFormat": {
+                    "type": "string",
+                    "default": "php",
+                    "description": "File format of view files. Eg: php or tpl or twig"
                 }
             }
         },

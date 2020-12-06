@@ -21,7 +21,8 @@ export class parse{
         const: /const ([a-zA-Z0-9_ ]*)=(.*);/ig,
         static: /static \$([a-zA-Z0-9_ ]*)=(.*);/ig,
         variable: /[public|protected|private] \$([a-zA-Z0-9_ ]*)/ig,
-        class: /class (.*?)\s*{/ig
+        class: /class (.*?)\s*{/ig,
+        view: /->view\(\s*(["'])(.*?)\1/g,
     };
 
     static parseFile(path:string):c.api_parse{
@@ -410,5 +411,19 @@ export class parse{
         let name=arr.pop()
         name=parse.modFirst(name)
         return arr.length==0? name: arr.join('/')+'/'+name;
+    }
+
+    static parseView(content: string) {
+        let res = [];
+        let match = null;
+        while (match = this.re.view.exec(content)) {
+            let end = match.index + match[0].length - 1;
+            let start = end - match[2].length;
+            res.push({
+                uri: match[2],
+                range: { start, end }
+            });
+        }
+        return res;
     }
 }
