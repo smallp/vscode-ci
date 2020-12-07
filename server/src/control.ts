@@ -458,8 +458,13 @@ export class loader {
     //load file in setting-other
     loadOther(str: string) {
         let path = loader.root.fsPath + '/' + str;
-        let content = fs.readFileSync(path, { encoding: 'utf-8' });
-        content&&this.parseConst(content, parse.parse.path2uri(path));
+        let content = ""
+        try {
+            content=fs.readFileSync(path,{encoding:'utf-8'});
+        } catch (e) {
+            return;
+        }
+        this.parseConst(content, parse.parse.path2uri(path));
     }
 
     parseConst(content: string, path: string) {

@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.4.0 (2020/12/07)
+* Fix: No error if `CI.other` has invalid file.[#42](https://github.com/smallp/vscode-ci/issues/42)
+* Feature: Enable to go to definition for "view" files. Thanks `aswinkumar863` for contribute.[#46](https://github.com/smallp/vscode-ci/issues/46)
+
 ## 0.3.9 (2020/04/07)
 * Fix: Use vscode-uri again for Windows.
 * Fix: No error for `->->`.[#39](https://github.com/smallp/vscode-ci/issues/39)

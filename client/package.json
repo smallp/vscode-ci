@@ -4,7 +4,7 @@
     "description": "Code completion for PHP codeigniter framework",
     "author": "Small",
     "license": "MIT",
-    "version": "0.3.9",
+    "version": "0.4.0",
     "publisher": "small",
     "engines": {
         "vscode": "^1.41.0"
@@ -86,6 +86,7 @@
         ]
     },
     "scripts": {
+        "vscode:prepublish": "cd ../client && webpack --mode production",
         "compile": "tsc -p ./",
         "watch": "tsc -w -p ./",
         "webpack-pro": "webpack --mode production",
@@ -97,10 +98,10 @@
         "vscode-languageclient": "^4.1.4"
     },
     "devDependencies": {
-        "vscode": "^1.1.5",
-        "webpack": "^4.42.1",
         "ts-loader": "^6.2.2",
         "typescript": "^3.5.1",
+        "vscode": "^1.1.5",
+        "webpack": "^4.42.1",
         "webpack-cli": "^3.3.11"
     }
 }
