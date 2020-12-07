@@ -1,7 +1,7 @@
 import {
     SymbolInformation, SymbolKind, Location, CompletionItemKind,
     TextDocumentPositionParams, CompletionItem, SignatureHelp,
-    ParameterInformation, Range, Hover, TextDocument, InsertTextFormat
+    ParameterInformation, Range, Hover, TextDocument, InsertTextFormat, DocumentLink
 } from 'vscode-languageserver';
 import * as fs from 'fs';
 import * as parse from './parse';
@@ -57,6 +57,7 @@ export interface CI {
 	system:string;
 	app: string;
 	ignoreSymbols: boolean;
+	viewFilesFormat: string;
 }
 export class loader {
     //root of the workspace
@@ -585,5 +586,24 @@ export class loader {
             }
             return new Map();
         }
+    }
+
+    documentLinks(document: TextDocument) {
+        let content = document.getText();
+        let res: DocumentLink[] = [];
+        let links = parse.parse.parseView(content);
+
+        let ext = this.settings.viewFilesFormat.trim().split('.').pop();
+        if (ext) ext = `.${ext}`;
+
+        for (let link of links) {
+            let target = URI.parse(`${loader.root}/${this.settings.app}/views/${link.uri}${ext}`);
+            let range = Range.create(
+                document.positionAt(link.range.start),
+                document.positionAt(link.range.end)
+            );
+            res.push(DocumentLink.create(range, target.path))
+        }
+        return res;
     }
 }

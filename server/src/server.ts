@@ -10,7 +10,8 @@ import {
 	TextDocuments, InitializeResult, TextDocumentPositionParams,
 	CompletionItem,
 	DocumentSymbolParams,SymbolInformation,SignatureHelp,Location,Hover,
-	ExecuteCommandParams
+	ExecuteCommandParams,
+	DocumentLinkParams
 } from 'vscode-languageserver';
 import {
 	TextDocument
@@ -41,6 +42,7 @@ connection.onInitialize((params): InitializeResult => {
 			// Tell the client that the server works in FULL text document sync mode
 			textDocumentSync:TextDocumentSyncKind.Full,
 			documentSymbolProvider:true,
+			documentLinkProvider: { resolveProvider: false },
 			definitionProvider :true,
 			hoverProvider : true,
 			signatureHelpProvider : {
@@ -138,7 +140,12 @@ connection.onHover((position:TextDocumentPositionParams):Hover=>{
 	else return mLoader.hover(
 		position,
 		documents.get(position.textDocument.uri).getText());
-})
+});
+
+connection.onDocumentLinks((param:DocumentLinkParams, token) => {
+	if (param.textDocument.uri.indexOf(loader.loader.root.toString())<0) return null;
+	else return mLoader.documentLinks(documents.get(param.textDocument.uri));
+});
 
 // Listen on the connection
 connection.listen();
