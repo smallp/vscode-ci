@@ -24,7 +24,7 @@
 			"port": 6011,
 			"sourceMaps": true,
 			"outFiles": [
-				"${workspaceRoot}/client/server/**/*.js"
+				"${workspaceRoot}/server/out/*.js"
 			]
 		}
 	]

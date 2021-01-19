@@ -1,10 +1,10 @@
 # PHP intellisense for codeigniter
 
-This extension is developed for codeigniter framework.
+This extension is developed for codeigniter framework 3.X (**Don't support CI 4.X**).
 
 When there is `system` folder in you workspace, the extension will start and parse the files in your model folder. You can try to run `CI: refresh Model` command to figure out if this extension starts.
 
-If you find any bug or suggestion, please add a issue [here](https://github.com/smallp/vscode-ci/issues).
+If you find any bug or suggestion, please add a issue [here](https://github.com/smallp/vscode-ci/issues). It is better if you can add a PR as I'm too busy now to maintain this extension.
 
 **Attention**: All the features is based on **RegExp**, so it is limited in some situation.
 
@@ -43,6 +43,6 @@ You can hover to get a method's documents.
 * If there is a library that has the same name with a model, the library will be ignored as it is a litter troublesome to diff them.
 
 ## Author's words
-From now, the extension's all feature has been all done. In the rest of the time, I will only fix bugs for it. Thanks for using.
+From now, the extension's all feature has been all done. Thanks for using.
 
 **Enjoy!**

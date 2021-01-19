@@ -1,4 +1,6 @@
 # Change Log
+## 0.4.2 (2021/01/19)
+* Fix: onSignatureHelp & onHover failed if there is subfolder.[#54](https://github.com/smallp/vscode-ci/issues/54)
 
 ## 0.4.0 (2020/12/07)
 * Fix: No error if `CI.other` has invalid file.[#42](https://github.com/smallp/vscode-ci/issues/42)

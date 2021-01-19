@@ -231,7 +231,6 @@ export class loader {
             if (arr.length==3) return null;
             claName = arr[2]
         }
-        claName = this.alias.has(claName) ? this.alias.get(claName) : claName;
         let method = arr.pop();
         let toRet: SignatureHelp = {
             signatures: [],
@@ -349,7 +348,6 @@ export class loader {
         if (arr[1]=='CI') arr.splice(1, 1)
         if (arr.length < 3) return null;
         let claName = arr[1];
-        claName = this.alias.has(claName) ? this.alias.get(claName) : claName;
         let method = arr.pop();
         method = method.substring(0, method.indexOf('('));
         let data: fun;
