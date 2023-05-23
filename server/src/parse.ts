@@ -14,7 +14,7 @@ export class parse{
     static paramDeli='@@';
     static pair={'"':'"','\'':'\'','(':')',"[":"]"};
     static re={
-        fun:/function (.+?)\((.*?)\)/g,
+        fun:/function (\w+)\((.*?)\)/g,
         method:/->[a-zA-Z0-9_]*$/,
         endOfWords:/\)\s*[=|!|\|\||&&|<|>]/,
         completeWord:/^[a-zA-Z0-9_]*(\()?/,
